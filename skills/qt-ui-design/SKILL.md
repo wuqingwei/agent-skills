@@ -7,9 +7,9 @@ compatibility: >-
   Designed for Claude Code, GitHub Copilot, and similar agents.
 disable-model-invocation: false
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.1"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: conceptual
   changelog: "Initial release"
 ---
@@ -26,7 +26,7 @@ Use the seven items below to decide what is already known and what to ask. If th
    - If a specific board: ask whether a board-specific skill exists for it and load it if so.
 2. **Screen shape** — Rectangle (default), Square, or Circle?
 3. **Resolution and DPI** — Do you know the screen resolution and DPI? (Approximate is fine.)
-4. **Design system** — Check whether the project already uses a design system or Qt Quick Controls style. If so, follow it and reuse its tokens. If not, recommend a Qt Quick Controls style: Basic, Fusion, Imagine, Material, Universal, iOS, or FluentWinUI3 (the iOS and FluentWinUI3 styles require Qt 6.7 or later). Where the project follows a third-party design language (Material Design 3, Apple Human Interface Guidelines, Fluent 2), map its tokens to the corresponding Qt Quick Controls style rather than introducing a parallel token vocabulary.
+4. **Design system** — Check whether the project already uses a design system or Qt Quick Controls style. If so, follow it and reuse its tokens. If not, recommend a Qt Quick Controls style: Default, Fusion, Imagine, Material, or Universal (the iOS and FluentWinUI3 styles require Qt 6.7 or later and do not exist in Qt 5). Where the project follows a third-party design language (Material Design 3, Apple Human Interface Guidelines, Fluent 2), map its tokens to the corresponding Qt Quick Controls style rather than introducing a parallel token vocabulary.
 5. **Content priority** — What information is most important (primary), secondary, and tertiary on this screen?
 6. **Viewing distance** — How far will users be from the screen? (e.g. handheld ~30 cm, desk ~60 cm, panel ~1.5 m, wall ~3 m)
 7. **Locale and input** — What is the primary locale/language? Is RTL (Arabic, Hebrew, Farsi, Urdu) support required? What input methods must be supported (touch, keyboard, mouse/pointer, hardware buttons, voice)?
@@ -89,7 +89,7 @@ Motion communicates state, relationship, and causality. Every animation must be 
 - **Duration budgets:** Small elements (icons, badges): 100–150 ms. Medium elements (cards, panels): 200–300 ms. Full-screen transitions: 300–400 ms. Never exceed 500 ms for any UI animation — slower feels broken.
 - **Limit simultaneous animations** to one or two elements. Animating the whole screen at once disorients.
 - **Animate only `transform` and `opacity`** in QML/CSS — these are GPU-composited. Animating geometry (width, height, anchors) triggers layout recalculation and causes jank.
-- **Honour user preference for reduced motion.** On the web, gate non-essential animation behind the `prefers-reduced-motion` CSS media query. Qt 6.x has no built-in equivalent: expose a project-level setting (for example a singleton property bound to `QSettings` or to a runtime accessibility option) and gate animations on it. When the user opts out, replace animation with instant transitions — do not simply slow them down.
+- **Honour user preference for reduced motion.** On the web, gate non-essential animation behind the `prefers-reduced-motion` CSS media query. Qt 5 has no built-in equivalent: expose a project-level setting (for example a singleton property bound to `QSettings` or to a runtime accessibility option) and gate animations on it. When the user opts out, replace animation with instant transitions — do not simply slow them down.
 - **Spatial consistency:** Elements that move between screens should animate in the direction that matches their destination (forward = slide left, back = slide right for LTR layouts).
 ### 1.2 Typography scale (desktop/web)
 
@@ -137,7 +137,7 @@ In QML, define the scale as a singleton (e.g. `TypeScale.qml`) so sizes are refe
 ```qml
 // TypeScale.qml — generated from modular scale, base 16, ratio 1.333
 pragma Singleton
-import QtQuick
+import QtQuick 2.15
 
 QtObject {
     readonly property real base:    16   // ms(0)
@@ -150,22 +150,17 @@ QtObject {
 
 Reference via `TypeScale.h1` in components. Recalculate the whole singleton when the base or ratio changes — never patch individual values.
 
-Register the singleton in your QML module so it can be imported. In a `qmldir` file:
+Register the singleton in a `qmldir` file next to it (Qt 5 registers QML modules through `qmldir`, not CMake):
 
 ```
 module MyApp.Theme
 singleton TypeScale 1.0 TypeScale.qml
 ```
 
-In CMake with `qt_add_qml_module`:
+Then make the module importable from C++ before the engine loads:
 
-```cmake
-qt_add_qml_module(myapp_theme
-    URI MyApp.Theme
-    VERSION 1.0
-    QML_FILES TypeScale.qml
-)
-set_source_files_properties(TypeScale.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+```cpp
+engine.addImportPath(QStringLiteral("qrc:/qml"));  // dir containing MyApp/Theme/qmldir
 ```
 
 ### 1.3 Multi-input and keyboard navigation (desktop/web)
@@ -330,5 +325,5 @@ Apply section 4 constraints first if the target is embedded.
 - Apple Human Interface Guidelines: https://developer.apple.com/design/human-interface-guidelines
 - Microsoft Fluent 2 Design Principles: https://fluent2.microsoft.design/design-principles
 - Google Material Design 3 Foundations: https://m3.material.io/foundations
-- Qt QLocale (localisation API): https://doc.qt.io/qt-6/qlocale.html
-- Qt LayoutMirroring (RTL): https://doc.qt.io/qt-6/qml-qtquick-layoutmirroring.html
+- Qt QLocale (localisation API): https://doc.qt.io/qt-5.15/qlocale.html
+- Qt LayoutMirroring (RTL): https://doc.qt.io/qt-5.15/qml-qtquick-layoutmirroring.html

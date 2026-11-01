@@ -9,12 +9,12 @@ tools can run it in full.
 | Skill | Requirements |
 |-------|--------------|
 | `qt-cpp-review` | Python 3.7+ for the linter script. No external Python packages. |
-| `qt-qml-review` | Python 3.7+ for the linter script. No external Python packages. Optional: `qmllint` from a Qt 6 installation for type checks. |
-| `qt-qml-profiler` | A Qt 6 installation containing `bin/qmlprofiler`. CMake and a C++ toolchain (profiling mode only, to build with `-DQT_QML_DEBUG`). Python 3 for the trace parser. |
-| `qt-qml-test` | Qt 6: the generated tests use unversioned `import QtQuick` and `import QtTest`. Existing QML components to test; the skill does not scaffold a project from nothing. |
-| `qt-qml-test-run` | A Qt 6 installation containing `bin/qmltestrunner`. A CMake-based project (qmake is not supported). CMake 3.21 or newer and a C++ toolchain when building. Python 3 for the JUnit XML parser. |
-| `qt-cmake-project` | Qt 6.8 or newer is a soft requirement: the skill's defaults assume the Qt 6.8 API. No script dependencies. |
-| `qt-figma-token-extraction` | A Figma file with variables or text styles. The Figma MCP server, or a Figma Personal Access Token for REST API extraction. An existing CMake-based Qt 6 project, or agreement to create one. |
+| `qt-qml-review` | Python 3.7+ for the linter script. No external Python packages. Optional: `qmllint` from a Qt 5 installation for syntax-level checks. |
+| `qt-qml-profiler` | A Qt 5.15 installation containing `bin/qmlprofiler`. CMake and a C++ toolchain (profiling mode only, to build with `-DQT_QML_DEBUG`). Python 3 for the trace parser. |
+| `qt-qml-test` | Qt 5.15+ (generated tests use versioned imports and `required property`, both Qt 5.15 features). Existing QML components to test; the skill does not scaffold a project from nothing. |
+| `qt-qml-test-run` | A Qt 5 installation containing `bin/qmltestrunner`. A CMake-based project (qmake is not supported). CMake 3.5+ and a C++ toolchain when building. Python 3 for the JUnit XML parser. |
+| `qt-cmake-project` | Qt 5.15 or newer is a soft requirement: the skill's defaults assume the Qt 5.15 API. No script dependencies. |
+| `qt-figma-token-extraction` | A Figma file with variables or text styles. The Figma MCP server, or a Figma Personal Access Token for REST API extraction. An existing CMake-based Qt 5 project, or agreement to create one. |
 | `qt-figma-component-generation` | The Figma MCP server. `design-tokens.json` and the QML design-system singletons produced by `qt-figma-token-extraction`. |
 | `qt-cpp-docs`, `qt-qml-docs`, `qt-ui-design` | No external dependencies. |
 
@@ -54,7 +54,7 @@ with shell access, such as Claude Code or Codex CLI. There are no
 condensed variants, and GitHub Copilot and in-IDE assistants
 without a build environment are not supported.
 
-See [Installation](https://github.com/TheQtCompanyRnD/agent-skills#installation)
+See [Installation](https://github.com/wuqingwei/agent-skills#installation)
 for where each tool expects the skill files.
 
 ## Report accumulation in qt-qml-test-run

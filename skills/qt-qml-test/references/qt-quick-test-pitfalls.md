@@ -174,12 +174,12 @@ mutated its source property.
 Symptom: the generated test contains only thin outer-scope
 assertions (component compiles, Window `visible`) when the
 source clearly has interactive children — a `Button` with
-press/release handlers, a `MultiEffect` whose properties
+press/release handlers, a `Text` whose properties
 mutate, a `Slider`, etc. — that look test-worthy. Rerunning
 the skill regenerates the same thin test.
 
 - **`id`s are document-scoped; cross-document lookup is
-  `objectName`-only** (rule 46). The test file cannot resolve
+  `objectName`-only** (rule 45). The test file cannot resolve
   `id: button` declared in `Main.qml` — `findChild` matches
   on `objectName`, not `id`. When the source's test-worthy
   children lack `objectName`, the skill asks the user once

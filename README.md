@@ -1,8 +1,24 @@
-# Qt AI Skills
+# Qt5 AI Skills
 
-Official agentic skills for Qt software development
-and quality assurance, designed for use with AI coding tools
-such as Claude Code, Codex CLI, and GitHub Copilot.
+Agentic skills for **Qt 5** software development and quality
+assurance, designed for use with AI coding tools such as Claude
+Code, Codex CLI, and GitHub Copilot.
+
+This is a Qt 5 adaptation of the official Qt AI Skills
+([wuqingwei/agent-skills](https://github.com/wuqingwei/agent-skills),
+upstreamed from The Qt Company's `qt-ai-skills`). All skill names
+are unchanged; content has been ported to the **Qt 5.15 LTS** API
+surface, and skills/tooling that only exist in Qt 6 have been
+removed:
+
+- `qt-canvas2d` — removed (the `QtCanvasPainter`/Canvas2D module
+  was introduced in Qt 6.12; Qt 5 only has the legacy Qt Quick
+  `Canvas` element)
+- `qt-documentation-mcp` — removed (hosted server serves Qt 6
+  documentation only)
+- `qml-live-preview-mcp` — removed (requires Qt 6.12 or later)
+
+完整改动记录见 **[HANDOVER.md](HANDOVER.md)**（Qt5 适配交接文档）。
 
 Skills have been tested with frontier LLMs from the Claude,
 Gemini, and GPT model families.
@@ -21,27 +37,25 @@ for the full cross-platform story.
 > Before using the skills under Qt commercial licensing, make
 > sure you have understood and agree to the
 > [Qt AI Services Terms & Conditions](https://www.qt.io/terms-conditions/ai-services-2025-06).
-> By using the skills or MCP tools, you accept these terms &
-> conditions and that you have the right to do so on behalf of
-> your employer.
+> By using the skills you accept these terms & conditions and that
+> you have the right to do so on behalf of your employer.
 
 ## Skills
 
 | Skill | Type | Description |
 |-------|------|-------------|
-| `qt-cpp-review` | Review | Deterministic linting + deep analysis for Qt C++ code (inline for small scopes, parallel shard agents above about 2,500 lines). Covers model rule compliance, memory ownership, thread safety, correctness, error handling, and performance. |
-| `qt-qml-review` | Review | Deterministic QML linting (48+ rules) + deep analysis (inline for small scopes, parallel shard agents above about 1,500 lines) for bindings, layout, loaders, delegates, states, and performance. |
-| `qt-qml` | Conceptual | QML best practices for writing, reviewing, fixing, and refactoring. Corrects systematic LLM pre-training biases around bindings, scoping, modules, JS interop, and types. |
-| `qt-canvas2d` | Conceptual | Qt Canvas2D (Qt 6.12+, Qt Canvas Painter) best practices for GPU-accelerated imperative 2D drawing in QML — gauges, charts, waveforms, freehand drawing. Corrects LLM confusion with the legacy Qt Quick `Canvas` and HTML5 `<canvas>` APIs |
+| `qt-cpp-review` | Review | Deterministic linting + deep analysis for Qt 5 C++ code (inline for small scopes, parallel shard agents above about 2,500 lines). Covers model rule compliance, memory ownership, thread safety, correctness, error handling, and performance. |
+| `qt-qml-review` | Review | Deterministic QML linting (45+ rules) + deep analysis (inline for small scopes, parallel shard agents above about 1,500 lines) for bindings, layout, loaders, delegates, states, and performance. |
+| `qt-qml` | Conceptual | QML best practices for writing, reviewing, fixing, and refactoring. Corrects systematic LLM pre-training biases around versioned imports, bindings, scoping, modules, JS interop, and types. |
 | `qt-ui-design` | Conceptual | UI design and audit for Qt/QML, web, and embedded (MPU/MCU) targets. Covers screen layout, navigation, and UX review with platform-aware defaults for geometry, viewing distance, input, and locale. |
 | `qt-qml-docs` | Process | Generates Markdown reference documentation for QML components and applications from .qml source files. |
 | `qt-cpp-docs` | Process | Generates Markdown reference documentation for Qt/C++ source files — classes, modules, utilities, headers, and entry points. |
-| `qt-qml-profiler` | Tool | Runs `qmlprofiler` on a 2D QML / Qt Quick application, parses the `.qtd` trace, and analyzes hotspots against the source code with frame-time, memory, and pixmap-cache summaries. Does not cover Qt Quick 3D. |
+| `qt-qml-profiler` | Tool | Runs `qmlprofiler` on a 2D QML / Qt Quick application, parses the `.qtd` trace, and analyzes hotspots against the source code with frame-time, memory, and pixmap-cache summaries. |
 | `qt-qml-test` | Process | Generates Qt Quick Test cases (`tst_*.qml`) for QML components using `TestCase`, `SignalSpy`, and `tryCompare`. Handles single files and batches. Does not cover CMake or runner setup. |
 | `qt-qml-test-run` | Tool | Builds and runs Qt Quick Test (`qmltestrunner`) tests for a CMake project, parses the JUnit XML, and writes a Markdown report. Opt-in CMake test-infrastructure wiring with `--wire-up`. Companion to `qt-qml-test`. |
 | `qt-figma-token-extraction` | Process | Extracts design tokens, text styles, and variables from a Figma design system and produces a design-tokens.json plus ready-to-use QML singletons. |
 | `qt-figma-component-generation` | Process | Extracts component metadata from a Figma design system and generates production-ready QML controls mapped to Qt Quick Controls 2 patterns. Requires tokens from `qt-figma-token-extraction`. |
-| `qt-cmake-project` | Conceptual | Sets up and manages Qt 6 projects built with CMake — fresh projects, executables, libraries, QML modules, plugins, folder layout, and static resources. Corrects systematic LLM biases around qmake-isms and the legacy `qt5_*` macros. |
+| `qt-cmake-project` | Conceptual | Sets up and manages Qt 5 projects built with CMake — fresh projects, executables, libraries, plugins, folder layout, and static resources. Corrects systematic LLM biases toward Qt 6 commands (`qt_standard_project_setup`, `qt_add_qml_module`) and reminds it that in Qt 5 the `qt5_*` macros, `AUTOMOC`, and `.qrc` resources are the standard. |
 
 ### Skill types
 
@@ -53,25 +67,6 @@ for the full cross-platform story.
   LLMs consistently fail (declarative QML, C++/QML boundary,
   Widgets patterns, UI design)
 - **Tool** — guidance on Qt CLI tools and testing solutions
-
-## MCP Tools
-
-| Tool | Description |
-|------|-------------|
-| `qt-documentation-mcp` | Hosted MCP server for Qt API documentation lookup across the latest release and active LTS branches. Bundled with the `qt-development-skills` plugin; also available standalone via the official MCP registry as `io.qt/qt-documentation-mcp`. |
-| `qml-live-preview-mcp` | A local MCP server that launches a Qt Quick application and live-previews QML edits in it, without a rebuild. |
-
-### Qt Documentation MCP Tool
-
-See [`mcp/qt-documentation-mcp/README.md`](mcp/qt-documentation-mcp/README.md)
-for endpoint and manual setup instructions for AI clients other than
-Claude Code.
-
-### QML Live Preview MCP Tool
-
-Read the [`Introducing the QML Live Preview MCP Tool for Agentic Development of Embedded Devices`](https://www.qt.io/blog/introducing-the-qml-live-preview-mcp-tool-for-agentic-development-of-embedded-devices) blog post to gain more information about the QML-Live-Preview-MCP-Server.
-
-See [`mcp/qml-live-preview-mcp/README.md`](mcp/qml-live-preview-mcp/README.md) for endpoint and manual setup instructions.
 
 ## Repository Structure
 
@@ -85,18 +80,16 @@ skills/                           # All skills live here
     platforms/                    #   Platform-specific variants
   qt-qml-review/
   qt-qml/
-  qt-canvas2d/
   qt-ui-design/
   qt-qml-docs/
   qt-cpp-docs/
   qt-qml-profiler/
   qt-qml-test/
   qt-qml-test-run/
+  qt-figma-token-extraction/
+  qt-figma-component-generation/
   qt-cmake-project/
-mcp/                              # MCP servers bundled with the plugin
-  qt-documentation-mcp/           #   Each server is a directory
-    README.md                     #   with its own README
-.mcp.json                         # MCP registration for Claude Code
+agents/                           # Review subagents for the review skills
 .claude-plugin/                   # Claude Code CLI & Copilot CLI plugin config
 gemini-extension.json             # Gemini CLI extension manifest
 docs/                             # Source for the docs site (MkDocs)
@@ -116,16 +109,16 @@ Codex CLI support natively:
 name: qt-qml-review
 description: >-
   Reviews QML source files for correctness, performance, and
-  maintainability. Deterministic linting (48+ rules) plus
+  maintainability. Deterministic linting (45+ rules) plus
   deep analysis (parallel shard agents for large scopes) for
   bindings, layout, loaders, delegates, states, and performance.
 license: LicenseRef-Qt-Commercial OR BSD-3-Clause
 compatibility: >-
   Designed for Claude Code, GitHub Copilot, and similar agents.
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.0"
-  qt-version: "6.x"
+  qt-version: "5.15"
 ---
 ```
 
@@ -165,8 +158,8 @@ directory:
 skills/qt-qml-review/
 ├── SKILL.md                       # Core skill (tool-agnostic)
 ├── references/
-│   ├── qml-lint-rules.md
-│   └── qml-review-checklist.md
+│   ├── agent-rules.md
+│   └── qt-qml-review-checklist.md
 └── platforms/                     # Platform-specific variants
     └── windsurf.md                #   Self-contained compact variant
 ```
@@ -192,8 +185,8 @@ GitHub repository. Choose the method for your platform below.
 Install as a plugin using the Claude Code CLI plugin system:
 
 ```
-/plugin marketplace add TheQtCompanyRnD/agent-skills
-/plugin install qt-development-skills
+/plugin marketplace add wuqingwei/agent-skills
+/plugin install qt5-development-skills
 ```
 
 Or install individual skills manually:
@@ -221,7 +214,7 @@ Claude Code auto-discovers skills — no restart needed.
 Use Vercel's cross-platform skill installer:
 
 ```bash
-npx skills add TheQtCompanyRnD/agent-skills
+npx skills add wuqingwei/agent-skills
 ```
 
 Or copy skills manually:
@@ -239,13 +232,8 @@ Restart Codex after adding skills.
 ### GitHub Copilot CLI
 
 Copilot natively reads the same `SKILL.md` directory format as
-Claude Code. Install individual skills using GitHub CLI (preview):
-
-```bash
-gh skill install TheQtCompanyRnD/agent-skills qt-qml-review
-```
-
-Or copy/symlink the skill into one of Copilot's discovery paths:
+Claude Code. Or copy/symlink the skill into one of Copilot's
+discovery paths:
 
 ```bash
 # User-wide (available in any project)
@@ -266,14 +254,14 @@ loaded.
 ### VSCode Agents (Copilot and others)
 
 Run `Chat: Install Plugin From Source` from the Command Palette.
-Enter `https://github.com/TheQtCompanyRnD/agent-skills` (this repo) to clone and install
+Enter `https://github.com/wuqingwei/agent-skills` (this repo) to clone and install
 
 ### Gemini CLI
 
 Install as an extension:
 
 ```bash
-gemini extensions install https://github.com/TheQtCompanyRnD/agent-skills
+gemini extensions install https://github.com/wuqingwei/agent-skills
 ```
 
 Or import skills into your project's context file:
@@ -304,15 +292,7 @@ these tools, so only the static guidance applies.
 ## Documentation site
 
 A browsable documentation site is built from the `docs/` directory
-using [MkDocs Material](https://squidfunk.github.io/mkdocs-material/)
-and published at:
-
-> **<https://doc.qt.io/agentictools/>**
-
-The canonical repo is on Gerrit
-(`codereview.qt-project.org/qtai/qtaiskills`); doc.qt.io builds are
-driven by the `qtaiskills` Rundeck job in `tqtc-doctools` on each
-push to the publishing branch.
+using [MkDocs Material](https://squidfunk.github.io/mkdocs-material/).
 
 ### Local preview
 
@@ -323,7 +303,7 @@ pip install -r requirements-docs.txt
 mkdocs serve
 ```
 
-Then open <http://127.0.0.1:8000/agent-skills/> — the dev server
+Then open <http://127.0.0.1:8000/> — the dev server
 live-reloads on every save.
 
 ### Production build
@@ -333,7 +313,7 @@ mkdocs build --strict
 ```
 
 Output goes to `site/`. `--strict` fails on broken links and
-malformed nav, matching the GitHub Actions check.
+malformed nav.
 
 ### Adding a new skill page
 

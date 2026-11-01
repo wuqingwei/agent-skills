@@ -6,7 +6,7 @@
 // Usage: Primitives.neutrals.neutral_900
 //        Primitives.accents.neon_500
 pragma Singleton
-import QtQuick
+import QtQuick 2.15
 
 QtObject {
     // ── Neutrals ──────────────────────────────────────────────────────────────

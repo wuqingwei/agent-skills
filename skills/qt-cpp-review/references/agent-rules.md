@@ -1,4 +1,4 @@
-# Qt6 C++ Review -- Deep-Analysis Agent Rules
+# Qt5 C++ Review -- Deep-Analysis Agent Rules
 
 Semantic checks that need symbol tracing, control-flow reasoning or
 cross-file context and therefore cannot be expressed as linter

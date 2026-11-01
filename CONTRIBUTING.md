@@ -162,7 +162,7 @@ trigger words. Save secondary details for later in the string.
 Good example:
 ```yaml
 description: >-
-  Reviews Qt6 QML code for correctness and best practices. Use
+  Reviews Qt5 QML code for correctness and best practices. Use
   when the user asks to review, check, audit, or look over QML
   files, or before committing QML changes.
 ```

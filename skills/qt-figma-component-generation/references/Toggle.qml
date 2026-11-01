@@ -9,8 +9,8 @@
 //   Toggle { label: "Dark mode"; checked: true }
 //   Toggle { size: "small"; onToggled: console.log(checked) }
 
-import QtQuick
-import QtQuick.Controls.Basic
+import QtQuick 2.15
+import QtQuick.Controls 2.15
 import DesignSystem
 
 Switch {

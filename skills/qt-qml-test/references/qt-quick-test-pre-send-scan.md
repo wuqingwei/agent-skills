@@ -21,7 +21,7 @@ noise.
 
 Example — instead of:
 
-> Per rule 46, two items lack `objectName`...
+> Per rule 45, two items lack `objectName`...
 
 write:
 

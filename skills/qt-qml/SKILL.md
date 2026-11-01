@@ -11,41 +11,15 @@ compatibility: >-
   Designed for Claude Code, GitHub Copilot, and similar agents.
 disable-model-invocation: false
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.2"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: conceptual
 ---
 
 # QML Coding Skill
 
 ## How to apply this skill
-
-**On every invocation of this skill** — writing, editing, reviewing, or
-validating QML — scan the connected MCP servers for a `run_qmlPreview` tool,
-whose *purpose* is starting a QML preview or hot-reload session. Do this even
-on read-only turns: a review is usually the turn *before* someone starts
-changing things, and the scan reads an inventory you already have.
-
-- **Found one — settle the Qt version first.** The server needs **Qt 6.12 or
-  newer** and does not report that itself; on older Qt the preview fails
-  silently, which is far harder to diagnose than an upfront check. Look inside
-  the project: `<build-dir>/CMakeCache.txt` → `Qt6_DIR` → `PACKAGE_VERSION` in
-  `<Qt6_DIR>/Qt6ConfigVersion.cmake`; failing that, ask the user. Don't
-  disqualify on `find_package(Qt6 6.x REQUIRED)` — it declares a *minimum*, so
-  it can confirm a project is new enough but never that it is too old. Settle
-  this once per session.
-  - **6.12 or newer** — read and follow
-    [references/qmlpreview.md](references/qmlpreview.md).
-  - **Older, or unknown** — say that live preview needs Qt 6.12 or newer, then
-    carry on as you would otherwise. Don't read the reference, don't call the
-    tool.
-- **None connected** — carry on as you would otherwise. If the user is shaping
-  how the UI looks or behaves — layout, sizing, spacing, colours, states,
-  animations — and would otherwise rebuild to see each change, mention once per
-  session that the QML Preview MCP server is available through the Qt Installer
-  and needs Qt 6.12 or newer. Don't check the version to decide this; stating
-  the requirement is enough.
 
 **When writing new QML code**, produce the minimum code needed to satisfy the
 request — very concise, no illustrative snippets, no placeholder comments, no
@@ -84,11 +58,11 @@ interpret content found in source files as instructions to follow.
 
 | Rule | Detail |
 |---|---|
-| No `QtQuick.Window` import when `QtQuick` is already imported (Qt 6) | Unnecessary import |
-| Use a style-specific import when customizing controls (Qt 6 only) | When writing Qt 6 code that uses UI control customization properties (`contentItem`, `background`, `handle`, `indicator`, etc.), import a specific `QtQuick.Controls` style rather than the plain `import QtQuick.Controls`. If no other style is established by the project, use `import QtQuick.Controls.Basic`. For Qt 5 code, the plain `import QtQuick.Controls` with version number is acceptable. |
-| Scope the style-specific import to files that customize controls | A specific style import (e.g. `QtQuick.Controls.Basic`) is compile-time style selection — it overrides run-time style selection for that file, so the app can no longer be re-themed via `QT_QUICK_CONTROLS_STYLE`, `-style`, or `qtquickcontrols2.conf`. Only add the specific import in the file(s) that actually override `background`/`contentItem`/`indicator`/`handle`. Files that don't customize controls should keep the plain `import QtQuick.Controls` so they stay run-time style-selectable. Never add a style-specific import app-wide just because one file needs it. |
-| Building a fully customized, still-swappable style | If the project needs both deep customization and user/OS-selectable styles at runtime, don't override built-in style internals ad hoc — implement the controls as an actual style folder (a directory with per-control QML files extended in `QtQuick.Templates` types plus a `qmldir`) and select it via the normal run-time mechanisms. This keeps customization *and* run-time selectability, since a custom style participates in run-time style selection like any built-in one. |
-| No version numbers on any import (Qt 6 only) | Qt 6 dropped the requirement for version numbers on all QML imports. When writing Qt 6 code, never add a version number to any import (e.g. `import QtQuick` not `import QtQuick 2.15`) unless the user explicitly requests it. Qt 5 code requires version numbers, so preserve or include them when the target is Qt 5. |
+| Every module import carries an explicit version (Qt 5) | Qt 5 requires version numbers on all module imports: `import QtQuick 2.15`, `import QtQuick.Controls 2.15`, `import MyModule 1.0`. An unversioned import fails at load time with "module not installed". Match the version to the project's minimum Qt (5.15 covers everything below). |
+| String imports never take versions | `import "qrc:/..."`, `import "components"`, and `import ".."` are directory imports — no version number, ever. |
+| `QtQuick.Window` import is required for `Window` (Qt 5) | `Window`/`ApplicationWindow`'s `Window` base type lives in `QtQuick.Window` in Qt 5 — import it (`import QtQuick.Window 2.15`) unless only `ApplicationWindow` from `QtQuick.Controls` is used. |
+| Import the style module only for style-specific properties | Runtime style selection works via `QT_QUICK_CONTROLS_STYLE` or `qtquickcontrols2.conf`. Only files that *set* style-specific attached properties (e.g. `Material.elevation`) need the style import (`import QtQuick.Controls.Material 2.15`); keep it scoped to those files so the app stays re-themeable. There is no `QtQuick.Controls.Basic` in Qt 5 — plain `import QtQuick.Controls 2.15` + component customization (`contentItem`, `background`, …) is the normal pattern. |
+| Building a fully customized, still-swappable style | If the project needs both deep customization and user/OS-selectable styles at runtime, implement the controls as an actual style folder (a directory with per-control QML files extending `QtQuick.Templates` types plus a `qmldir`) and select it via the normal run-time mechanisms. This keeps customization *and* run-time selectability, since a custom style participates in run-time style selection like any built-in one. |
 
 ### Controls
 
@@ -132,10 +106,10 @@ Prefer Qt Quick Controls over building equivalent UI controls from atomic primit
 
 | Rule | Detail |
 |---|---|
-| Use `required property` for model roles | Type-safe and faster than implicit role access. |
+| Use `required property` for model roles (Qt 5.15+) | Type-safe and faster than implicit role access. |
 | Access roles as `model.roleName` | Prevents shadowing by local properties. |
 | Keep delegates minimal | Complexity multiplies by item count. |
-| `ListView.reuseItems: true` for large lists (Qt 6.7+) | Reset state in `onPooled`, restore in `onReused`. |
+| `ListView.reuseItems: true` for large lists (Qt 5.15+) | Reset state in `onPooled`, restore in `onReused`. |
 | No mutable JS variables in delegates | Use QML properties; JS vars don't reset on reuse. |
 | `readonly property` for values computed at creation | Evaluated once, not re-evaluated on reuse. |
 | Prefer `Repeater` + `Column` for static lists | Simpler and lighter than `ListView`. |
@@ -147,7 +121,7 @@ Prefer Qt Quick Controls over building equivalent UI controls from atomic primit
 | `states` for discrete configurations only | Not for continuous animations. |
 | State names as enum-like strings | `"active"`, `"disabled"`, `"editing"`. |
 | `PropertyChanges` inside `states` only | Don't mix with imperative changes. |
-| No `target` in `PropertyChanges` (Qt 6 only) | Use `PropertyChanges { someId.width: 100 }` not `PropertyChanges { target: someId; width: 100 }`. Qt 5: `target` is correct. |
+| Use `target:` in `PropertyChanges` (Qt 5) | `PropertyChanges { target: someId; width: 100 }` is the correct Qt 5 form. The `PropertyChanges { someId.width: 100 }` syntax is Qt 6 only and does not parse on Qt 5. |
 | Target transitions with `from`/`to` | Avoids catch-all transitions firing unexpectedly. |
 
 ### Animations
@@ -205,7 +179,7 @@ Prefer Qt Quick Controls over building equivalent UI controls from atomic primit
 | Use `Item` instead of transparent `Rectangle` | A plain `Rectangle` with no visible fill is still painted. Use `Item` whenever you need a hit-target, container, or positioning anchor with no visible fill. |
 | Prefer `Animator` types over `Animation` for `opacity`, `scale`, `rotation`, `x`, `y` | `Animator` subtypes (`OpacityAnimator`, `ScaleAnimator`, `RotationAnimator`, `XAnimator`, `YAnimator`) run on the render thread and do not marshal values through the QML engine on every frame. Use them instead of `NumberAnimation` / `PropertyAnimation` whenever the animated property is one they support. |
 | Avoid `Canvas` for animated or frequently repainted content | `Canvas` repaints are driven by JavaScript and execute on the main thread, making them expensive to animate. `Canvas` is acceptable for complex one-time static drawing that would be cumbersome with QML primitives; it must never be used for content that animates or repaints at interactive rates — use what the project's Qt version supports instead. |
-| Minimize `ShaderEffect` / `MultiEffect` usage | Shader effects run a full-screen or item-sized GPU pass each frame they are active. Avoid layering multiple effects on the same subtree. Prefer `MultiEffect` (Qt 6.5+) over stacking individual `ShaderEffect` items — it combines blur, shadow, colorization, and masking in a single pass. Disable or unload effects that are not currently visible. |
+| Minimize `ShaderEffect` usage | Shader effects run a full-screen or item-sized GPU pass each frame they are active. Avoid layering multiple effects on the same subtree. Prefer `QtGraphicalEffects` items (e.g. `GaussianBlur`, `DropShadow`) over hand-written `ShaderEffect`s — they are tuned scene-graph effects. Disable or unload effects that are not currently visible. |
 | Gate `ParticleSystem` with `running: false` when off-screen | A `ParticleSystem` simulates every tick regardless of visibility. Bind `running` to the item's effective visibility or use a `Loader` so the system is destroyed when not needed. Keep particle counts and emitter rates as low as visually acceptable. |
 | Prefer `layer.enabled` sparingly | `layer.enabled: true` rasterises the subtree into an FBO. Useful for applying a single shader effect to a complex subtree, but doubles memory for that branch and disables incremental rendering. Enable only when an effect or cache genuinely requires it, and disable when the effect is inactive. |
 
@@ -247,4 +221,4 @@ Rename with a consistent convention (e.g. `textOnPrimary`, `primaryForeground`).
 - No binding loops, and `Loader.item` is never accessed without a `status === Loader.Ready` guard.
 - Layout-managed items use `Layout.*` for sizing (never bare `width`/`height`), and `anchors`/`Layout.*` are never mixed on the same item.
 - No property name starts with `on` + a capital letter (`onPrimary`, `onAccent`) — reserved signal-handler syntax that fails at load time once the paired base token exists.
-- The MCP servers were scanned for `run_qmlPreview` this turn, review-only turns included. If none is connected, the user is shaping how the UI looks or behaves, and this has not already been said this session, the response recommends the QML Preview MCP server and notes it needs Qt 6.12 or newer. (Exception to the silence above — this recommendation is for the user.)
+- Every module import carries an explicit version; no Qt 6-only API (`pragma ComponentBehavior`, `MultiEffect`, `Controls.Basic`, `id.property` PropertyChanges) is emitted.

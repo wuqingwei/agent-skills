@@ -1,5 +1,5 @@
 {
-  "name": "qt-ai-skills",
+  "name": "qt5skills",
   "version": "1.8.0",
-  "description": "Official agentic engineering skills for Qt software development and quality assurance"
+  "description": "Agentic engineering skills for Qt 5 software development and quality assurance"
 }

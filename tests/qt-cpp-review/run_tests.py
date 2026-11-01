@@ -29,9 +29,7 @@ TEST_DIR = Path(__file__).parent
 EXPECTED_UNIVERSAL = {
     # --- test_all_rules.h ---
     ("test_all_rules.h", "DEP-1"): 1,
-    ("test_all_rules.h", "DEP-5"): 1,
     ("test_all_rules.h", "DEP-9"): 1,
-    ("test_all_rules.h", "DEP-13"): 1,
     ("test_all_rules.h", "PAT-9"): 1,
     ("test_all_rules.h", "ENM-2"): 1,
     ("test_all_rules.h", "ENM-9"): 1,
@@ -43,7 +41,6 @@ EXPECTED_UNIVERSAL = {
     ("test_all_rules.cpp", "DEP-2"): 1,
     ("test_all_rules.cpp", "DEP-3"): 1,
     ("test_all_rules.cpp", "DEP-4"): 1,
-    ("test_all_rules.cpp", "DEP-6"): 1,
     ("test_all_rules.cpp", "DEP-7"): 1,
     ("test_all_rules.cpp", "DEP-8"): 1,
     ("test_all_rules.cpp", "DEP-10"): 2,
@@ -97,9 +94,7 @@ EXPECTED_UNIVERSAL = {
 EXPECTED_FRAMEWORK = {
     ("test_framework.h", "INC-6"): 1,
     ("test_framework.h", "INC-1"): 1,
-    ("test_framework.h", "VAL-6"): 1,
     ("test_framework.cpp", "CND-2"): 1,
-    ("test_framework.cpp", "PAT-6"): 1,
 }
 
 

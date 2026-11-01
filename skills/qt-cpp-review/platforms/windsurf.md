@@ -1,6 +1,6 @@
 ---
 trigger: model_decision
-description: "Review Qt6 C++ code for correctness and best practices"
+description: "Review Qt5 C++ code for correctness and best practices"
 ---
 
 # Qt C++ Review

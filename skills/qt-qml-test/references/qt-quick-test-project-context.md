@@ -15,11 +15,12 @@ project tree, and stop:
    directory as the source. Extract the `module <URI>` line
    if present — it is the canonical module URI for the source
    import.
-4. **The nearest `CMakeLists.txt`** walking up from the
-   source directory, but only to grep for a
-   `qt_add_qml_module(... URI <uri> ...)` call that covers
-   the source. Read just enough to capture the `URI`
-   argument; do not interpret anything else in the file.
+4. **The nearest `CMakeLists.txt` and the app's `main.cpp`**
+   walking up from the source directory, but only to grep for
+   `qmlRegisterType` / `qmlRegisterSingletonType` /
+   `qmlRegisterUncreatableType` calls that cover the source.
+   Read just enough to capture the URI and version arguments;
+   do not interpret anything else in the file.
 
 Do not read framework files (Qt installation, third-party QML
 modules).

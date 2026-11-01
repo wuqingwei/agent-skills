@@ -94,32 +94,33 @@ readonly property int h1_weight: weight_semi_bold   // 600
 
 ## Shadow / Effect Tokens
 
-Figma EFFECT tokens (drop shadows) have no direct QML equivalent. Store them as individual typed properties, then apply via `MultiEffect` from `import QtQuick.Effects`.
+Figma EFFECT tokens (drop shadows) have no direct QML equivalent. Store them as individual typed properties, then apply via `DropShadow` from `import QtGraphicalEffects 1.15`.
 
-> **Never use `DropShadow` from `Qt5Compat.GraphicalEffects`.** That module is forbidden — use `MultiEffect` instead. Note: `MultiEffect` has no `spread` property and its `shadowBlur` is a 0.0–1.0 normalised value, not pixels. Store Figma's pixel blur as a token but normalise when binding.
+> **Qt 5 uses `QtGraphicalEffects`.** There is no `MultiEffect` / `QtQuick.Effects` and no `Qt5Compat.GraphicalEffects` in Qt 5 — `DropShadow` and friends live in `QtGraphicalEffects`. `DropShadow` takes pixel values directly (`radius`, `samples`); store Figma's pixel blur as a token and bind it as-is.
 
 ```qml
 // ── Shadow / Low ──────────────────────────────────────────────────────────
 // Figma: Shadow/Low — offset(0,1), blur 3px, spread 0, rgba(0,0,0,0.12)
-// Note: spread is not supported by MultiEffect — omit or approximate with size
+// Note: spread has no DropShadow equivalent — omit or approximate with radius
 readonly property int   shadow_low_offset_x: 0
 readonly property int   shadow_low_offset_y: 1
-readonly property real  shadow_low_blur:     0.1   // MultiEffect: 0.0–1.0 (Figma 3px ÷ 30 ≈ 0.1)
+readonly property real  shadow_low_blur:     3     // pixels — DropShadow.radius
 readonly property color shadow_low_color:    "#1f000000"  // 12% opacity black
 ```
 
 Usage in a QML component:
 
 ```qml
-import QtQuick.Effects
+import QtGraphicalEffects 1.15
 
-MultiEffect {
+DropShadow {
     source:                theItem
-    shadowEnabled:         true
-    shadowColor:           Theme.shadow_low_color
-    shadowHorizontalOffset: Theme.shadow_low_offset_x
-    shadowVerticalOffset:  Theme.shadow_low_offset_y
-    shadowBlur:            Theme.shadow_low_blur
+    anchors.fill:          theItem
+    color:                 Theme.shadow_low_color
+    horizontalOffset:      Theme.shadow_low_offset_x
+    verticalOffset:        Theme.shadow_low_offset_y
+    radius:                Theme.shadow_low_blur
+    samples:               9   // odd value >= 2 * radius + 1 for quality
 }
 ```
 

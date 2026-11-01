@@ -10,8 +10,8 @@
 //   TextField { label: "API Key"; echoMode: TextInput.Password }
 //   TextField { label: "Name"; errorMessage: "This field is required" }
 
-import QtQuick
-import QtQuick.Layouts
+import QtQuick 2.15
+import QtQuick.Layouts 1.15
 import DesignSystem
 
 ColumnLayout {

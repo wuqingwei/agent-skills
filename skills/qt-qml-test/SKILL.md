@@ -10,9 +10,9 @@ compatibility: >-
 disable-model-invocation: false
 argument-hint: "[<path-or-glob>]"
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.0"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: process
 ---
 
@@ -39,14 +39,12 @@ In scope:
 Out of scope:
 
 - Setting up build-system integration and running the
-  generated tests (CMake `qt_add_test`,
-  `quick_test_main_with_setup`, CTest, CI). Use the
-  `qt-qml-test-run` companion skill, or refer to Qt 6
+  generated tests (CMake wiring, `quick_test_main_with_setup`,
+  CTest, CI). Use the
+  `qt-qml-test-run` companion skill, or refer to Qt 5
   documentation.
 - C++ Qt Test (`QTEST_MAIN`), Squish, and Qt Creator IDE
   test integration.
-- Qt Quick 3D scene setup, ray-picking via `View3D.pick`,
-  and mesh-loading verification.
 
 ## Guardrails
 
@@ -84,7 +82,7 @@ test code as a fenced Markdown code block in the chat response.
   English. See
   [qt-quick-test-pre-send-scan.md](references/qt-quick-test-pre-send-scan.md)
   for the token list and rewrite example.
-- When rule 46 results in skipped items, list each unreached
+- When rule 45 results in skipped items, list each unreached
   item in the final reply: one bullet per item, `id` + source
   line + the one-line edit (`objectName: "<id>"` on the same
   item).
@@ -117,12 +115,8 @@ test code as a fenced Markdown code block in the chat response.
    template variant before applying test rules:
    - `Window` / `ApplicationWindow` (or a derivative) →
      [variant 7](references/qt-quick-test-template.md#variant-7--window--applicationwindow) (rule 41).
-   - `pragma Singleton` (or `QT_QML_SINGLETON_TYPE TRUE` in
-     CMake) → variant 8 (rule 42).
-   - Qt Quick 3D graphical node (`Model`, `Node`, `*Camera`,
-     `*Light`, `Skybox`, `SceneEnvironment`, etc.) →
-     **skip** (rule 45); note in final reply.
-   - `View3D` or Qt Quick 3D `*Material` → standard template.
+   - `pragma Singleton` (or a `singleton` entry in the
+     module's `qmldir`) → variant 8 (rule 42).
    - Anything else → single/nested-component template (see
      step 6).
 5. Resolve the **source import** — the line that makes the
@@ -142,7 +136,7 @@ test code as a fenced Markdown code block in the chat response.
    item, matching the existing `id`, on the same item, no
    other changes) **before** generating the test. If
    declined, or no user is available, proceed without source
-   edits — the affected assertions are skipped per rule 46
+   edits — the affected assertions are skipped per rule 45
    and listed in the final reply.
 8. Generate the test using the chosen template, applying
    every applicable rule from "Testing rules" below. When
@@ -164,9 +158,6 @@ When the user asks for tests covering several QML sources
      variants of a sibling file in the parent directory; the
      `tst_*.qml` for that parent already exercises whichever
      variant the active style selects.
-   - Any file whose top-level type is a Qt Quick 3D
-     graphical node (per rule 45). Note the skip in the
-     final reply.
 2. Pre-scan every remaining source for inner items whose
    properties or signals the per-source test would
    meaningfully exercise but which carry only an `id` (no
@@ -180,7 +171,7 @@ When the user asks for tests covering several QML sources
    step-7 prompt is suppressed for the remainder of this
    batch. If declined or no user is available, proceed
    without source edits — the affected assertions are
-   skipped per rule 46.
+   skipped per rule 45.
 4. For each source file, run the single-document workflow
    (steps 3 onward), writing each test to disk per the
    "Output contract".
@@ -196,29 +187,30 @@ Read a **minimum** set of project files as context per
 [references/qt-quick-test-project-context.md](references/qt-quick-test-project-context.md):
 the source QML under test (always), custom components it
 directly imports (read once, no recursion), the module's
-`qmldir` if present, and the nearest `CMakeLists.txt`
-(grepped only for `qt_add_qml_module(... URI <uri> ...)`).
+`qmldir` if present, and the nearest `CMakeLists.txt` /
+`main.cpp` (grepped only for `qmlRegisterType` /
+`qmlRegisterSingletonType` registrations and the `.qrc` file
+list).
 Do not read framework files. If a property or signal cannot
 be resolved, follow rule 40.
 
 ## Resolving the source import
 
 The `<source-import>` placeholder in the canonical template
-resolves to either `import <URI>` (when the project's QML
-module is declared on a library backing target) or
-`import "<relative-path>"` (everything else, including
-`qt_add_executable`-backed modules). See
+resolves to either `import <URI> <major>.<minor>` (when the
+component is reachable through a `qmlRegisterType`/`qmlRegisterSingletonType`
+registration or an on-disk `qmldir` module) or
+`import "<relative-path>"` (everything else). See
 [references/qt-quick-test-source-import.md](references/qt-quick-test-source-import.md)
-for the full resolution rules and the rare
-module-on-executable refactor case.
+for the full resolution rules.
 
 **Never emit `import my_module` literally** — it is a
 documentation placeholder, not a valid import.
 
 ## Canonical template
 
-All generated tests share the same skeleton: `import QtQuick`
-+ `import QtTest` + `<source-import>`, an outer
+All generated tests share the same skeleton: `import QtQuick 2.15`
++ `import QtTest 1.15` + `<source-import>`, an outer
 `Item { id: root }` with explicit width/height, a `Component`
 holding the type under test, and a `TestCase { when:
 windowShown; … }`. The outer `Item` is required — rule 3
@@ -235,7 +227,7 @@ load it for the paste-ready forms.
 
 ## Testing rules
 
-47 rules form the **contract** of this skill. Apply every
+46 rules form the **contract** of this skill. Apply every
 rule relevant to the component under test. The full
 normative text, examples, and rationale live in
 [references/qt-quick-test-rules.md](references/qt-quick-test-rules.md);
@@ -244,8 +236,9 @@ whenever a rule citation here is unclear.
 
 ### Imports & structure
 
-1. `QtQuick` + `QtTest` without versions. Add
-   `QtQuick.Controls` / `QtQuick.Layouts` only when test
+1. `QtQuick 2.15` + `QtTest 1.15` — Qt 5 imports always carry
+   versions. Add
+   `QtQuick.Controls 2.15` / `QtQuick.Layouts 1.15` only when test
    script code references identifiers from them by name.
 2. Set `Item` `width` and `height` appropriate to the
    tested component.
@@ -293,7 +286,7 @@ whenever a rule citation here is unclear.
 24. Cancel signals / `MouseArea` `onPositionChanged`: use
     `mousePress` + `mouseMove(out-of-bounds)` +
     `mouseRelease`, followed by an assertion on the cancel
-    outcome (rule 47).
+    outcome (rule 46).
 25. Do NOT use `keyClick()` for text input.
 26. Use `mouseDoubleClickSequence`, not `mouseDoubleClick`.
 27. Use `tryCompare` for any assertion after **any** mouse
@@ -335,7 +328,7 @@ whenever a rule citation here is unclear.
     `createTemporaryObject`. Use `Qt.createComponent(<url>)`
     + `createObject(null, {requiredProperty: …})`. URL form
     per template.md Variant 7.
-42. `pragma Singleton` / `QT_QML_SINGLETON_TYPE`: access by
+42. `pragma Singleton` / qmldir-registered singleton: access by
     name, never wrap in `Component`. Restore mutated state
     at end of each test function.
 
@@ -350,23 +343,16 @@ whenever a rule citation here is unclear.
     blocks for implicit/layout-sized types — under
     `offscreen` they can dispatch at 0×0.
 
-### Qt Quick 3D source handling
-
-45. Skip Qt Quick 3D graphical-node sources (`Model`,
-    `Node`, lights, cameras, `Skybox`, `SceneEnvironment`).
-    View3D-rooted sources and `*Material` types fall through
-    to the standard template.
-
 ### Unreachable inner items
 
-46. Source children the test would exercise must declare
+45. Source children the test would exercise must declare
     `objectName`. Offer to add and extend coverage; if
     declined or no user available, skip-and-list per the
     Output contract.
 
 ### No-op test functions
 
-47. Every test function must end with at least one outcome
+46. Every test function must end with at least one outcome
     assertion (`compare` / `tryCompare`) against state the
     actions changed. Existence checks alone are not a test
     body.

@@ -5,9 +5,9 @@ description: >
 license: LicenseRef-Qt-Commercial OR BSD-3-Clause
 compatibility: Works with Claude Code, Codex, and GitHub Copilot. Requires Figma MCP and design-tokens.json from qt-figma-token-extraction.
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.0"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: process
 ---
 
@@ -95,7 +95,7 @@ This folder contains Figma-verified Pattern A controls. Each is a self-contained
 | `references/Toggle.qml` | `Toggle.qml` | Switch track + animated thumb, NumberAnimation |
 | `references/Select.qml` | `Select.qml` | Custom Item with Popup, ListView delegate, chevron |
 
-**Read the file that most closely matches the component being generated before writing any code.** If a QML coding skill (`qt-development-skills:qt-qml`) is available, use it while writing so the output follows idiomatic Qt 6 patterns.
+**Read the file that most closely matches the component being generated before writing any code.** If a QML coding skill (`qt-qml`) is available, use it while writing so the output follows idiomatic Qt 5 patterns.
 
 ### Pattern B assets — `assets/qt-controls/`
 
@@ -151,20 +151,20 @@ Record all extracted data in a scratch note before writing any code.
 | Figma component | QML base type |
 |---|---|
 | Button (any style) | `AbstractButton` (from `QtQuick.Controls`) |
-| Checkbox | `CheckBox` (from `QtQuick.Controls.Basic`) |
-| Radio button | `RadioButton` (from `QtQuick.Controls.Basic`) |
-| Toggle / switch | `Switch` (from `QtQuick.Controls.Basic`) |
+| Checkbox | `CheckBox` (from `QtQuick.Controls 2.15`) |
+| Radio button | `RadioButton` (from `QtQuick.Controls 2.15`) |
+| Toggle / switch | `Switch` (from `QtQuick.Controls 2.15`) |
 | Text input / field | `ColumnLayout` wrapping a `Rectangle` + `TextInput` |
-| Text area (multiline) | `ScrollView` wrapping `TextArea` (from `QtQuick.Controls.Basic`) — no reference asset yet; follow the TextField pattern but add `wrapMode: TextArea.Wrap` and remove fixed height |
+| Text area (multiline) | `ScrollView` wrapping `TextArea` (from `QtQuick.Controls 2.15`) — no reference asset yet; follow the TextField pattern but add `wrapMode: TextArea.Wrap` and remove fixed height |
 | Select / dropdown | Custom `Item` with a `Popup` |
-| Slider | `Slider` (from `QtQuick.Controls.Basic`) |
+| Slider | `Slider` (from `QtQuick.Controls 2.15`) |
 | Tab bar | `TabBar` + `TabButton` |
-| Progress bar | `ProgressBar` (from `QtQuick.Controls.Basic`) |
-| Spinner / spin box | `SpinBox` (from `QtQuick.Controls.Basic`) |
+| Progress bar | `ProgressBar` (from `QtQuick.Controls 2.15`) |
+| Spinner / spin box | `SpinBox` (from `QtQuick.Controls 2.15`) |
 | Card / container | `Rectangle` or plain `Item` |
 | Divider | `Rectangle` (1 px, fillWidth) |
 | Badge | `Rectangle` wrapping a `Text` |
-| Tooltip | `ToolTip` (from `QtQuick.Controls.Basic`) |
+| Tooltip | `ToolTip` (from `QtQuick.Controls 2.15`) |
 
 ### Variant → property pattern (Pattern A)
 
@@ -281,7 +281,7 @@ Place each component in the project's `components/` folder. Use PascalCase match
 // Sizes:  "small" | "medium" | "large"
 //
 // Usage:
-//   import MyProject
+//   import MyProject 1.0
 //   ComponentName { prop: "value"; onAction: doThing() }
 ```
 
@@ -324,7 +324,7 @@ Present a brief summary to the user:
 - Components generated (count and names)
 - Components skipped or blocked (with reason)
 - Full TODO list: tokens that need to be added to the design-system singletons
-- Recommended next step: add components to `qt_add_qml_module QML_FILES` in CMakeLists.txt and smoke-test in a gallery
+- Recommended next step: add the component files to the project's `qml.qrc` (and register any C++-backed types with `qmlRegisterType`) and smoke-test in a gallery
 
 ---
 

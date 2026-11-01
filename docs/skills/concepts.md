@@ -63,7 +63,7 @@ Here's what each skill in this repo recognizes:
 ### Review skills
 
 - **qt-cpp-review** — "review", "check", "audit", "look over",
-  "sanity check" applied to Qt6 C++. Also suggested *before
+  "sanity check" applied to Qt5 C++. Also suggested *before
   committing* C++ changes.
 - **qt-qml-review** — the same trigger family applied to QML
   files, before commits, or on PR review requests.

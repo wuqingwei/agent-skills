@@ -77,7 +77,7 @@ Each rule has a short ID prefixed with `FW-` for cross-referencing.
 
 - **FW-DOC-1**: New public classes: complete docs with `\since`
   tag and overview section; check `\ingroup` for discoverability.
-- **FW-DOC-2**: Mention in "What's New in Qt 6" if appropriate.
+- **FW-DOC-2**: Mention in "What's New in Qt 5.15" if appropriate.
 
 ## Value Classes
 
@@ -88,8 +88,8 @@ Each rule has a short ID prefixed with `FW-` for cross-referencing.
   Q_DECLARE_TYPEINFO + ADL swap).
 - **FW-VAL-4**: Member-swap: swap in declaration order, use
   member's member-swap > qt_ptr_swap > std::swap. Never qSwap.
-- **FW-VAL-5**: Don't add Q_DECLARE_METATYPE (automatic since
-  Qt 6).
+- **FW-VAL-5**: Do add Q_DECLARE_METATYPE for custom value types
+  (required in Qt 5 for QVariant and queued signal arguments).
 - **FW-VAL-6**: Move SMFs: inline and noexcept.
 - **FW-VAL-7**: Never export non-polymorphic class wholesale.
   Export only public/protected out-of-line members.
@@ -115,7 +115,8 @@ Each rule has a short ID prefixed with `FW-` for cross-referencing.
 - **FW-SMF-2**: SMF/swap argument name: always `other`.
 - **FW-SMF-3**: Copy SMFs of implicitly-shared classes: usually
   NOT noexcept (allocation on detach).
-- **FW-SMF-4**: Every ctor: `Q_IMPLICIT` or `explicit`.
+- **FW-SMF-4**: Every one-argument ctor: `explicit` unless the
+  conversion is part of the API contract (Qt 5 has no `Q_IMPLICIT`).
 - **FW-SMF-5**: Default ctors: implicit (not explicit).
 - **FW-SMF-7**: Move-assignment: use QT_MOVE_ASSIGNMENT_OPERATOR_
   IMPL_VIA_{MOVE_AND_SWAP|PURE_SWAP}. PURE_SWAP only for
@@ -147,8 +148,9 @@ Each rule has a short ID prefixed with `FW-` for cross-referencing.
 
 ## Relational Operators (Framework)
 
-- **FW-REL-1**: Avoid signed/unsigned comparison. Use
-  `q20::cmp_*` (Qt's C++20 backport shim).
+- **FW-REL-1**: Avoid signed/unsigned comparison. Compare via a
+  wider signed type or explicit casts (Qt 5 has no `q20::cmp_*`
+  shim — that is Qt 6).
 
 ## Conditional Compilation (Framework)
 

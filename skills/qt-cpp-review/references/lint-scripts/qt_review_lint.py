@@ -2,7 +2,7 @@
 # Copyright (C) 2026 The Qt Company Ltd.
 # SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 """
-qt_review_lint.py — Data-driven single-pass Qt6 C++ linter.
+qt_review_lint.py — Data-driven single-pass Qt5 C++ linter.
 
 Rules are defined as entries in typed tables (RULES_SIMPLE,
 RULES_CONTEXT, RULES_FLAG) processed by a generic dispatch loop.
@@ -134,9 +134,6 @@ RE_DEP2_QSHARED = re.compile(r'\bQSharedPointer\b')
 RE_DEP2_EXCLUDE = re.compile(r'QSharedDataPointer')
 RE_DEP3_QWEAK = re.compile(r'\bQWeakPointer\b')
 RE_DEP4_FOREACH = re.compile(r'\b(Q_FOREACH|foreach)\s*\(')
-RE_DEP5_QPAIR = re.compile(r'\bQPair\b')
-RE_DEP6_QSDP = re.compile(r'\bQSharedDataPointer\b')
-RE_DEP6_EXCLUDE = re.compile(r'QExplicitlySharedDataPointer')
 RE_DEP7_QMINMAX = re.compile(r'\bq(Min|Max|Bound)\s*\(')
 RE_DEP8_QPRINTF = re.compile(r'\bqv?s?n?printf\s*\(')
 RE_DEP9_QATOMIC = re.compile(r'\b(QAtomicInt|QAtomicPointer)\b')
@@ -147,8 +144,6 @@ RE_DEP11_EXCLUDE = re.compile(r'currentDateTimeUtc')
 RE_DEP12_JAVA_ITER = re.compile(
     r'\bQ(List|Vector|Map|Hash|Set|LinkedList)(Mutable)?Iterator\b'
 )
-RE_DEP13_QCHAR = re.compile(r'(?<![:])\bQChar\s+[a-zA-Z_]')
-RE_DEP13_EXCLUDE = re.compile(r'QChar::')
 
 # PAT / HDR / API / ENM / TMO / CND / VAL / TRN
 RE_HDR3_MINMAX = re.compile(r'std::(min|max)\s*\(')
@@ -169,8 +164,6 @@ RE_TRN3_BOOL = re.compile(
 RE_PAT5_UNLIKELY = re.compile(r'Q_UNLIKELY.*q(Warning|Fatal|Critical)')
 RE_TMO1_INT_TIMEOUT = re.compile(r'\b(int|qint64)\s+\w*([Tt]imeout|[Ii]nterval)')
 RE_CND2_HASINC = re.compile(r'__has_include\s*\(\s*<[^Q]')
-RE_VAL6_METATYPE = re.compile(r'Q_DECLARE_METATYPE\s*\(')
-RE_PAT6_MAKEUNIQUE = re.compile(r'std::make_unique<\w+\[\]>')
 RE_PAT7_QMAP = re.compile(r'(?<![a-zA-Z])QMap\s*<')
 RE_PAT7_EXCLUDE = re.compile(r'QMultiMap')
 RE_PAT8_QMAP_PTR = re.compile(r'(?<![a-zA-Z])QMap\s*<\s*\w+\s*\*')
@@ -304,11 +297,6 @@ RULES_SIMPLE: list[Rule] = [
          "QWeakPointer \u2014 use std::weak_ptr"),
     Rule("DEP-4", RE_DEP4_FOREACH,
          "Q_FOREACH/foreach \u2014 use range-based for loop"),
-    Rule("DEP-5", RE_DEP5_QPAIR,
-         "QPair \u2014 use std::pair (alias since Qt 6.0)"),
-    Rule("DEP-6", RE_DEP6_QSDP,
-         "QSharedDataPointer \u2014 use QExplicitlySharedDataPointer",
-         exclude=RE_DEP6_EXCLUDE),
     Rule("DEP-7", RE_DEP7_QMINMAX,
          "qMin/qMax/qBound \u2014 use (std::min)()/(std::max)()/std::clamp()"),
     Rule("DEP-8", RE_DEP8_QPRINTF,
@@ -323,9 +311,6 @@ RULES_SIMPLE: list[Rule] = [
          exclude=RE_DEP11_EXCLUDE),
     Rule("DEP-12", RE_DEP12_JAVA_ITER,
          "Java-style iterator \u2014 use STL iterators"),
-    Rule("DEP-13", RE_DEP13_QCHAR,
-         "QChar as object type \u2014 use char16_t; QChar:: namespace is OK",
-         exclude=RE_DEP13_EXCLUDE),
     # --- HDR ---
     Rule("HDR-3", RE_HDR3_MINMAX,
          "Unprotected std::min/max \u2014 use (std::min)(a,b) for Windows macro safety",
@@ -438,10 +423,6 @@ RULES_FRAMEWORK: list[Rule] = [
          header_only=True),
     Rule("CND-2", RE_CND2_HASINC,
          "__has_include() for non-Qt header \u2014 prefer __cpp_lib_* feature macros"),
-    Rule("VAL-6", RE_VAL6_METATYPE,
-         "Q_DECLARE_METATYPE \u2014 automatic since Qt 6, remove"),
-    Rule("PAT-6", RE_PAT6_MAKEUNIQUE,
-         "std::make_unique<T[]> \u2014 consider q20::make_unique_for_overwrite (avoids zeroing)"),
 ]
 
 

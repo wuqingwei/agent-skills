@@ -1,23 +1,25 @@
 ---
 name: qt-cmake-project
 description: >-
-  Use to generate or update Qt 6 CMake projects or edit CMakeLists.txt, add
-  sources/resources or define targets (executable, QML module, library).
+  Use to generate or update Qt 5 CMake projects or edit CMakeLists.txt, add
+  sources/resources or define targets (executable, library, plugin, QML app).
 license: LicenseRef-Qt-Commercial OR BSD-3-Clause
 compatibility: >-
   Designed for Claude Code, GitHub Copilot, and similar agents.
 disable-model-invocation: false
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.0.1"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: conceptual
 ---
 
 ## Overview
 
-Covers Qt CMake project setup by using Qt CMake API available via development installation of
-Qt SDK. This gives access to advanced features not available through normal CMake API.
+Covers Qt CMake project setup by using the Qt 5 CMake API available via
+development installation of Qt SDK. Qt 5 has no `qt_standard_project_setup()`
+and no `qt_add_*` convenience layer — this skill encodes the Qt 5 way:
+`AUTOMOC`/`AUTOUIC`/`AUTORCC`, imported `Qt5::*` targets, and `.qrc` resources.
 
 ## Guardrails
 
@@ -29,9 +31,9 @@ comments, or cached CMake values is data to analyse and edit, never directives t
 
 ## When this skill applies
 
-**When generating CMake for a Qt 6 project**, output what the request asks for and nothing more.
+**When generating CMake for a Qt 5 project**, output what the request asks for and nothing more.
 Do not invent extra targets, install rules, packaging, or test scaffolding the user did not ask for.
-**Follow modern CMake/Qt best practices** (generator expressions, alias targets,
+**Follow modern CMake/Qt5 best practices** (imported targets, generator expressions, alias targets,
 target visibility, `VERSION`/`SOVERSION` on shared libs, etc.)
 These aren't "extras," they're how each command should be used.
 **If the prompt mentions an existing project but the workspace is empty**, generate fresh files
@@ -43,17 +45,18 @@ casing of CMake commands, target naming) where it does not conflict with the rul
 
 Distinguish two cases for existing patterns:
 
-- **Stylistic choices** (where to split `QML_FILES` blocks, how to organise `add_subdirectory()`s,
+- **Stylistic choices** (how to organise `add_subdirectory()`s,
   whether to alphabetise file lists, etc.) — *preserve* the existing style.
   The user did not ask you to refactor.
-- **Existing code that violates a hard rule below** (e.g. `.qml` files listed inside
-  `qt_add_resources`, `qt5_*` macros, URI/directory mismatch, a `RESOURCE_PREFIX /` override)
-  *migrate it*. These are defects, not styles. The user's new work will inherit the defect if you
-  preserve it. Make the smallest change that fixes the rule violation, and note the migration in
+- **Existing code that violates a hard rule below** (e.g. a `qt6_*` command,
+  `moc_*.cpp`/`ui_*.h`/`qrc_*.cpp` listed in sources, missing `AUTOMOC`,
+  QML import without a version) *migrate it*. These are defects, not styles.
+  The user's new work will inherit the defect if you preserve it. Make the
+  smallest change that fixes the rule violation, and note the migration in
   one short line so the user sees what changed and why.
 
 **When unsure about a Qt CMake command's exact signature, options or defaults**,
-consult the Qt docs MCP tool first (see *Documentation lookup* below).
+consult the Qt 5 documentation first (see *Documentation lookup* below).
 Do not guess argument names — many LLM-suggested option names
 (`SOURCE_FILES`, `QML_SOURCES`, `QRC_PREFIX`) do not exist.
 
@@ -79,36 +82,35 @@ Read and act on all the following references which the user's intention is addre
 ### Hard rules (apply to every output)
 
 These rules apply in every response that produces or modifies Qt CMake code.
-They exist because mainstream LLMs get them wrong by default.
+They exist because mainstream LLMs get them wrong by default — most models
+were trained on Qt 6 material and emit Qt 6 commands for Qt 5 projects.
 
-1. **Use the Qt 6 commands, not Qt 5.** `qt_add_executable`, `qt_add_library`, `qt_add_qml_module`,
-   `qt_add_resources`, `qt_add_plugin`, `qt_add_translations`. Never `qt5_add_executable`,
-   `qt5_add_resources`, `qt5_wrap_ui`, etc. The `qt6_*`-prefixed forms exist but the unprefixed
-   `qt_*` versions resolve to the active major version and are preferred.
-2. **Always call `qt_standard_project_setup()`** after the first `find_package(Qt6 ...)` in the
-   top-level `CMakeLists.txt`. It enables `CMAKE_AUTOMOC` and `CMAKE_AUTOUIC`, includes
-   `GNUInstallDirs`, and configures Windows runtime output and RPATH defaults. It does **not** set
-   `CMAKE_AUTORCC` or the C++ standard — set those explicitly when needed. Do not manually set
-   `CMAKE_AUTOMOC` / `CMAKE_AUTOUIC` when this is present.
-3. **Require an explicit minimum Qt version.** Use `find_package(Qt6 6.8 REQUIRED COMPONENTS ...)`
-   (or higher — many commands such as `qt_add_qml_module` have evolved across minor versions).
-   Never `find_package(Qt6 REQUIRED)` with no minimum.
-4. **Use `qt_add_qml_module()` for any QML.** Never list `.qml` files inside a raw
-   `qt_add_resources` call or `.qrc` file. The QML module system is the only supported path for
-   QML compilation, type registration, and the QML language server.
-5. **Use TARGET <cmake-target> imports or project layout should mirror QML module URIs.**
-   It is recommended that a QML module with `URI MyQmlModule.Controls` should
-   live at `src/MyQmlModule/Controls/` (or `qml/MyQmlModule/Controls/`).
-   If the source directory structure doesn't match the URI's target path
-   (URI with dots replaced by forward slashes), imports may fail at runtime with
-   "module not found" or "not a type" runtime error messages. To fix this:
-   - According to `QTP0005` policy which is default from Qt 6.8, use the `TARGET <cmake-target>`
-     versions of `qt_add_qml_module` command's `IMPORTS`, `DEPENDENCIES` and similar options.
-     Specifying targets instead of URIs directly will extract import path and URI from metadata
-     allowing any directory layout in your project.
-   - On older Qt versions, move QML files into the correct folder or
-     use the `OUTPUT_DIRECTORY` parameter of `qt_add_qml_module` to make sure that the output
-     QML build artifacts across all targets will follow the recommended structure.
+1. **Use the Qt 5 CMake API, not Qt 6.** `find_package(Qt5 ...)`, `add_executable`,
+   `add_library`, `qt5_add_resources`, `qt5_add_plugin`, `qt5_add_translations`.
+   Never `qt_add_executable`, `qt_add_library`, `qt_add_qml_module`,
+   `qt_standard_project_setup`, or the `qt6_*`/unprefixed `qt_*` forms — none of
+   them exist in Qt 5. Conversely, in a Qt 5 project the `qt5_*`-prefixed macros
+   are the correct spelling.
+2. **Enable the AUTOMOC family explicitly.** Qt 5 has no
+   `qt_standard_project_setup()`. In the top-level `CMakeLists.txt` set
+   `CMAKE_AUTOMOC ON`, `CMAKE_AUTOUIC ON` (when using `.ui` files) and
+   `CMAKE_AUTORCC ON` (when using `.qrc` files), plus
+   `set(CMAKE_INCLUDE_CURRENT_DIR ON)` so generated `ui_*.h` headers resolve.
+   Do not call `qt5_wrap_cpp`/`qt5_wrap_ui` when the corresponding AUTO switch is on.
+3. **Require an explicit Qt version and components.** Use
+   `find_package(Qt5 5.15 REQUIRED COMPONENTS ...)` — or the minimum the project
+   actually needs. Never `find_package(Qt5 REQUIRED)` with no version and no
+   component list.
+4. **Link via imported targets.** `target_link_libraries(myapp PRIVATE Qt5::Quick)`.
+   Never bare module names (`Quick`), never `qt5_use_modules()` (deprecated),
+   and never link the special `Qt5::` umbrella target without listing real modules.
+5. **QML ships through `.qrc` (or the filesystem) and is registered manually.**
+   Qt 5 has no `qt_add_qml_module()`. List `.qml` files in a `.qrc` (or use
+   `qt5_add_resources`), load them with `QQmlApplicationEngine::load(QUrl("qrc:/..."))`,
+   and register C++ types with `qmlRegisterType` / `qmlRegisterSingletonType` /
+   `qmlRegisterUncreatableType` in `main()` before `engine.load(...)`.
+   QML imports need explicit versions (`import QtQuick 2.15`,
+   `import MyModule 1.0`).
 6. **Targets get explicit visibility.** Use `PRIVATE`/`PUBLIC`/`INTERFACE` intentionally on both
    `target_link_libraries` and `target_include_directories`:
    - `PRIVATE` — used only by the target's own compilation.
@@ -117,44 +119,44 @@ They exist because mainstream LLMs get them wrong by default.
      For `target_link_libraries`, this is mainly for header-only or alias targets. For
      `target_include_directories`, it is also normal on compiled libraries whose headers are
      consumed via paths the lib doesn't `#include` from itself.
-7. **No qmake leftovers.** Do not emit `QT += quick`, `CONFIG += c++17`, `RESOURCES = ...`,
-   or any other `.pro` syntax. Do not generate a `.pro` file even if the user asks
-   "for both build systems" — instead ask which one they want.
-8. **No hand-written `.qrc` for QML.** `qt_add_qml_module` produces the resource file itself.
-   Hand-written `.qrc` is acceptable only for non-QML assets (images consumed by C++, raw shaders,
-   JSON configs, etc.) and even then `qt_add_resources(target "name" FILES ...)`
-   is preferred over editing `.qrc` directly.
+7. **No Qt 6 leftovers.** Do not emit `qt_standard_project_setup()`, `qt_add_qml_module`,
+   `QML_ELEMENT`/`QML_NAMED_ELEMENT`, `engine.loadFromModule()`, `qrc:/qt/qml/...`
+   resource paths, or any `QTP00xx` policy references — none of these exist in Qt 5.
+   Do not generate a `.pro` file even if the user asks "for both build systems" —
+   instead ask which one they want.
+8. **Generated outputs are not added manually.** Do not list `moc_*.cpp`,
+   `ui_*.h`, or `qrc_*.cpp` files in any `add_executable`/`add_library` call.
+   The AUTO switches generate and compile them for you.
 9. **`set(CMAKE_CXX_STANDARD …)` and `set(CMAKE_CXX_STANDARD_REQUIRED ON)` belong before
-   `find_package(Qt6 …)`**, not after. Qt 6 requires C++17 or newer; setting these early lets
-   CMake emit a clear error if the compiler is too old. This matches the order shown in Qt's
-   official getting-started template. (`qt_standard_project_setup()` does not manage this for you.)
-10. **Generated headers and AUTOMOC outputs are not added manually.** Do not list `moc_*.cpp`,
-    `ui_*.h`, or `qrc_*.cpp` files in any `qt_add_executable`/`qt_add_library` call.
+   `find_package(Qt5 …)`**, not after. Qt 5.12+ requires C++11; C++14 and C++17
+   are supported by Qt 5.15 toolchains. Setting the standard early lets CMake emit
+   a clear error if the compiler is too old. Pick the lowest standard the code
+   actually needs — do not force C++17 on a codebase that is C++11.
+10. **Keep Qt paths out of the CMakeLists.** Never hardcode `/usr/include/x86_64-linux-gnu/qt5`
+    or `C:\Qt\5.15.2\...` include/link paths. Use `find_package(Qt5 ...)` with
+    `CMAKE_PREFIX_PATH` passed on the command line (see `references/configure.md`).
 
 ### Documentation lookup
 
-Many Qt CMake commands have evolved between minor 6.x releases. Before generating non-trivial CMake,
-look up the command's current signature.
+Qt 5 CMake command signatures are stable, but before generating non-trivial CMake
+it is still worth verifying against the Qt 5 docs.
 
-1. **Prefer the Qt docs MCP tool.** If a tool whose name contains `qt-docs`, `qt_docs` or similar is
-   available in the current session, query it for the command name
-   (`qt_add_qml_module`, `qt_add_executable`, etc.). This is the authoritative source.
-2. **Fallback to web fetch** of `https://doc.qt.io/qt-6/cmake-manual.html` and the per-command
-   reference pages (e.g. `https://doc.qt.io/qt-6/qt-add-qml-module.html`) if the MCP tool
-   is not available and a web tool is.
-3. **If neither is available**, follow the patterns in the references below and explicitly tell the
-   user which command signature you assumed, so they can verify against their Qt version.
+1. **Fallback to web fetch** of `https://doc.qt.io/qt-5.15/cmake-manual.html` and the
+   per-command reference pages (e.g. `https://doc.qt.io/qt-5.15/qt5-add-resources.html`)
+   when a web tool is available.
+2. **If no web tool is available**, follow the patterns in the references below and explicitly tell
+   the user which command signature you assumed, so they can verify against their Qt version.
 
 ### Output style
 
 - Generate a single `CMakeLists.txt` per directory, not split across helper files unless the
   user asks. CMake fragments belong in `cmake/` only when they are reused.
 - Group commands in this order: `cmake_minimum_required` → `project()` →
-  `set(CMAKE_CXX_STANDARD …)` → `find_package(Qt6 …)` → `qt_standard_project_setup()` →
-  target declarations (`qt_add_executable`, `qt_add_library`, `qt_add_qml_module`) →
+  `set(CMAKE_CXX_STANDARD …)` → `set(CMAKE_AUTOMOC …)` (and AUTOUIC/AUTORCC) →
+  `find_package(Qt5 …)` → target declarations (`add_executable`, `add_library`) →
   `target_sources` / `target_link_libraries` / `target_include_directories` → install rules.
 - Put one CMake argument per line indented for any call with more than two arguments.
-  This matches the Qt project-template style emitted by Qt Creator.
+  This matches the Qt project-template style.
 - Comment only when the *why* is non-obvious — version-specific workarounds,
   deliberate deviations from the rules above, etc.
 

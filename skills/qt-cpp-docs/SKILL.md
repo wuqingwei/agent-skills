@@ -14,9 +14,9 @@ compatibility: >-
   Designed for Claude Code, GitHub Copilot, and similar agents.
 disable-model-invocation: false
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.0"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: process
 ---
 # Qt C++ Documentation Skill
@@ -164,7 +164,7 @@ If thread-related design decisions are evident in the source (e.g. `QMutex` memb
 
 ### 13. QML Exposure *(if applicable)*
 
-Include this section only if the class is registered for use in QML via `qmlRegisterType`, `QML_ELEMENT`, `QML_NAMED_ELEMENT`, `QML_SINGLETON`, `QML_UNCREATABLE`, `QML_ANONYMOUS`, or similar. Describe:
+Include this section only if the class is registered for use in QML via `qmlRegisterType`, `qmlRegisterUncreatableType`, `qmlRegisterSingletonType`, or similar (Qt 5 registers types in C++ code — there are no `QML_ELEMENT` macros). Describe:
 - The QML type name and module it is registered in.
 - Which `Q_INVOKABLE` methods, `Q_PROPERTY` items, and signals are accessible from QML.
 - Any usage constraints that differ from C++ use (e.g. ownership rules when instantiated from QML).

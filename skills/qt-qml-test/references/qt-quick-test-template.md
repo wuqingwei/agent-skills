@@ -10,8 +10,8 @@ to reach into). The component is instantiated inside each test
 function.
 
 ```qml
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 
 <source-import>
 
@@ -56,8 +56,8 @@ dialog, a layout). Load the parent once and reach into named
 children via `findChild`.
 
 ```qml
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 
 <source-import>
 
@@ -105,8 +105,8 @@ true` immediately after looking the child up, before any input
 events.
 
 ```qml
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 
 <source-import>
 
@@ -153,16 +153,17 @@ The signal shown here (`valueModified`) requires interactive
 input to fire — drive each spy via a real input event
 (e.g. `mouseClick` on `up.indicator` / `down.indicator`),
 not a property assignment and not the `increase()` /
-`decrease()` methods. Per Qt 6 docs, `valueModified` is
-emitted only on touch, mouse, wheel, or key interaction;
+`decrease()` methods. Per Qt docs, `valueModified` is
+emitted only on touch, mouse, wheel, or key interaction (Qt Quick
+Controls 2.3 / Qt 5.12+);
 the methods bypass that path and fire `valueChanged` only.
 See the per-control sections of
 `qt-quick-test-controls.md` for which signals are
 interactive-only.
 
 ```qml
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 
 <source-import>
 
@@ -230,9 +231,9 @@ preferred for explicitness.
 etc.) via `dialog.standardButton(Dialog.Ok)`.
 
 ```qml
-import QtQuick
-import QtTest
-import QtQuick.Controls
+import QtQuick 2.15
+import QtTest 1.15
+import QtQuick.Controls 2.15
 
 <source-import>
 
@@ -329,15 +330,15 @@ no-CMake-info cases use `Qt.resolvedUrl("../<File>.qml")`.
 Absolute `file:///` is an escape hatch for symlinked test trees.
 
 ```qml
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 
 Item {
     id: root
     width: 800
     height: 600
 
-    readonly property string windowUrl: "qrc:/qt/qml/MyAppUi/MyWindow.qml"
+    readonly property string windowUrl: "qrc:/MyAppUi/MyWindow.qml"
 
     TestCase {
         name: "MyWindowTests"
@@ -353,7 +354,7 @@ Item {
         function test_defaultTitle() {
             let comp = Qt.createComponent(root.windowUrl)
             tryCompare(comp, "status", Component.Ready)
-            let win = comp.createObject(null, { availableStyles: ["Basic"] })
+            let win = comp.createObject(null, { availableStyles: ["Default"] })
             verify(win !== null)
             compare(win.title, qsTr("My App"))
             win.destroy()
@@ -365,18 +366,17 @@ Item {
 
 ### URL form by source location
 
-| Source's QML module backing | URL to use |
+| Source location | URL to use |
 |---|---|
-| `qt_add_library(... STATIC\|SHARED)` + `qt_add_qml_module(<lib> URI "<URI>" ...)` | `"qrc:/qt/qml/<URI>/<File>.qml"` |
-| `qt_add_executable(<exe>)` + `qt_add_qml_module(<exe> URI "<URI>" ...)` | `Qt.resolvedUrl("../<File>.qml")` |
-| Source on disk, no CMake info available | `Qt.resolvedUrl("../<File>.qml")` |
+| Source inside the application's `.qrc` and reachable from the test too | `"qrc:/<Prefix>/<Path>/<File>.qml"` (exactly as listed in the `.qrc`) |
+| Source on disk, or only in the app's own `.qrc` | `Qt.resolvedUrl("../<File>.qml")` |
 
 URL form notes:
 
 - qrc form survives symlinks, `-input <other-dir>` runs, and
-  test-tree relocation — but is unreachable from a sibling
-  test binary when the source belongs to an executable-backed
-  module (the qrc lives in the app, not the test).
+  test-tree relocation — but only works when the test can
+  actually load that resource URL (the `.qrc` must be part of
+  the test's own binary or a linked library).
 - `Qt.resolvedUrl("../<File>.qml")` is portable and machine-
   independent; it breaks only under symlinked test trees,
   where the URL resolves against the symlink rather than its
@@ -414,15 +414,15 @@ Variant notes:
 
 ## Variant 8 — Singleton access
 
-Use when the source QML starts with `pragma Singleton` (or is
-declared a singleton via CMake's `QT_QML_SINGLETON_TYPE TRUE`).
+Use when the source QML starts with `pragma Singleton` (and is
+listed with a `singleton` line in its module's `qmldir`).
 Singletons cannot be instantiated by user code — the test
 accesses the singleton through the module name and exercises
 its read/write properties.
 
 ```qml
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 
 <source-import>
 
@@ -467,13 +467,10 @@ Notes:
   functions. Always capture the original value before mutating
   a writable property, and restore it at the end of the
   function so subsequent tests are not order-sensitive.
-- If the singleton is registered via CMake's
-  `QT_QML_SINGLETON_TYPE TRUE` and the module's backing
-  target is an executable (not a library), the singleton is
-  not reachable from a sibling test binary via on-disk
-  imports — the project needs the module-on-executable
-  refactor (see the `qt-qml-test-run` skill's CMake
-  reference).
+- If the singleton is only reachable through a registered URI
+  (`qmlRegisterSingletonType`), the `<source-import>` must be
+  that versioned URI and the run must add the module's import
+  path (see the `qt-qml-test-run` skill for `-import` flags).
 
 ## Notes
 

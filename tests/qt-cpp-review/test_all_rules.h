@@ -19,8 +19,6 @@
 #include <QScopedPointer>
 QScopedPointer<int> scopedPtr;
 
-// DEP-5: QPair
-QPair<int, int> pairVal;
 
 // PAT-9: QList<QString> instead of QStringList
 QList<QString> stringList;
@@ -49,8 +47,4 @@ void configureExport(const QString &path, bool overwrite, bool notify);
 // DEP-9: QAtomic
 QAtomicInt atomicCounter;
 
-// DEP-13: QChar as object type
-QChar separator = u'/';
 
-// VAL-6: Q_DECLARE_METATYPE
-Q_DECLARE_METATYPE(NoteRoles)

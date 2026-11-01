@@ -8,7 +8,7 @@
 //   font.pixelSize: Typography.label_m_size          // 12 px
 //   font.weight:    Typography.label_m_default_weight  // Medium 500
 pragma Singleton
-import QtQuick
+import QtQuick 2.15
 import DesignSystem
 
 QtObject {

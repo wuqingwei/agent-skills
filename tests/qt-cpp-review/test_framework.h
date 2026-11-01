@@ -13,5 +13,3 @@
 #include <q20algorithm>
 #include <algorithm>
 
-// VAL-6: Q_DECLARE_METATYPE (framework only)
-Q_DECLARE_METATYPE(MyType)

@@ -1,6 +1,6 @@
 # Qt Quick Test — testing rules (full text)
 
-The 47 rules that form the contract of the `qt-qml-test`
+The 46 rules that form the contract of the `qt-qml-test`
 skill. `SKILL.md` carries a one-line index per rule under the
 same category headings; load this reference for the
 normative text, examples, and rationale.
@@ -9,11 +9,13 @@ Apply every rule relevant to the component under test.
 
 ## Imports & structure
 
-1. Use `QtQuick` and `QtTest` modules without specifying versions.
+1. Use versioned imports: `import QtQuick 2.15` and
+   `import QtTest 1.15` — Qt 5 requires versions on every
+   module import.
 
    Add Qt-shipped imports the test actually references:
 
-   - **`import QtQuick.Controls`** — only when the test code
+   - **`import QtQuick.Controls 2.15`** — only when the test code
      itself references a Controls identifier by name
      (`Slider.SnapAlways`, `Dialog.Ok`, `Popup.CloseOnEscape`,
      `Button.AutoRepeat`, etc.). The source's use of a
@@ -22,10 +24,9 @@ Apply every rule relevant to the component under test.
      QObject reference whose properties resolve dynamically,
      so `button.text` and `button.background.radius` work
      without `import QtQuick.Controls`. The source's
-     style-qualified import (`QtQuick.Controls.Basic`) brings
-     the type in for the source, not for the test's script
-     scope.
-   - **`import QtQuick.Layouts`** — when test code reads or
+     source's own imports bring the type in for the source,
+     not for the test's script scope.
+   - **`import QtQuick.Layouts 1.15`** — when test code reads or
      writes `Layout.fillWidth`, `Layout.preferredHeight`, etc.
 
    Do not add unreferenced framework imports. When in doubt,
@@ -109,7 +110,7 @@ Apply every rule relevant to the component under test.
     emits `canceled` instead of `released` when the release is
     outside the hit area, so state set by `onPressed` is
     expected to stay). A press/move/release with no following
-    assertion is a no-op — see rule 47.
+    assertion is a no-op — see rule 46.
 
 25. Do NOT use `keyClick()` for input text testing.
 26. Use `mouseDoubleClickSequence` instead of `mouseDoubleClick`.
@@ -211,15 +212,14 @@ Apply every rule relevant to the component under test.
 
     **URL form:** see
     [qt-quick-test-template.md § Variant 7 § URL form by source location](qt-quick-test-template.md#variant-7--window--applicationwindow).
-    The table there distinguishes static/shared library
-    backings, `qt_add_executable`-backed modules (whose
-    sources are **not** in the test binary's `qrc:/`), and
-    the no-CMake-info fallback — it is the single source of
+    The table there distinguishes sources reachable through
+    the test binary's own `qrc:/` from sources on disk (or only
+    inside the app's `.qrc`) — it is the single source of
     truth for URL selection. Do not embed an alternative
     priority list here; it would drift out of sync.
 
-42. **Sources marked `pragma Singleton`** (or registered via
-    `QT_QML_SINGLETON_TYPE TRUE` in CMake) are accessed by
+42. **Sources marked `pragma Singleton`** (and listed with a
+    `singleton` line in their module's `qmldir`) are accessed by
     name, not instantiated. Import the singleton's module and
     read/write its properties directly
     (`MySingleton.someProperty = …`). Never wrap a singleton
@@ -258,19 +258,6 @@ Apply every rule relevant to the component under test.
     ```
 
 ## Qt Quick 3D source handling
-
-45. **Qt Quick 3D graphical-node sources** (`Model`, `Node`,
-    `*Camera`, `*Light`, `Skybox`, `SceneEnvironment`, or
-    other `QtQuick3D` node types needing a scene) wrapped in
-    the canonical `Item { id: root }` template create the
-    object outside any graphics scene — the test reports PASS
-    while a runtime `QWARN: Created graphical object was not
-    placed in the graphics scene` fires. **Skip** these
-    sources; note the type in the final reply. View3D-rooted
-    sources and `*Material` types fall through to the
-    standard template.
-
-## Unreachable inner items
 
 46. **Inner items the test would meaningfully exercise must
     declare `objectName`; items with only an `id` are

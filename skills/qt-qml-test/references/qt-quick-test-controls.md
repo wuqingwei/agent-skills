@@ -416,7 +416,7 @@ example.
 
 ## What this reference does NOT cover
 
-- Build-system wiring (CMake `qt_add_test`, runner harness).
+- Build-system wiring (CMake test targets, runner harness).
 - Test review or refactoring.
 - Custom controls outside the `QtQuick.Controls` module — apply
   the same `SignalSpy` + `findChild` patterns and consult the

@@ -1,9 +1,8 @@
 // Copyright (C) 2026 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
-pragma ComponentBehavior: Bound
 
-import QtQuick
-import QtQuick.Templates as T
+import QtQuick 2.15
+import QtQuick.Templates 2.15 as T
 import Qt.Fonts as Fonts
 
 T.ComboBox {
@@ -20,7 +19,7 @@ T.ComboBox {
         AlignedOver
     }
 
-    function getPopupPosition(): int {
+    function getPopupPosition() {
         if (control.popupPosition === ComboBox.PopupPosition.Under)
             return control.height + control.popupGap
         else if (control.popupPosition === ComboBox.PopupPosition.AlignedUnder)

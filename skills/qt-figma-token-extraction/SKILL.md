@@ -6,9 +6,9 @@ license: LicenseRef-Qt-Commercial OR BSD-3-Clause
 compatibility: Works with Claude Code, Codex, and GitHub Copilot.
 disable-model-invocation: false
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.0"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: process
 ---
 
@@ -34,7 +34,7 @@ qt-figma-token-extraction/
 ```
 
 When reaching Step 4 (type mapping), read `references/token-mapping.md` before generating any QML.
-When generating QML files in Step 6, use the files in `examples/` as structural templates — they reflect the real Qt Design Studio naming and organisation patterns.
+When generating QML files in Step 6, use the files in `examples/` as structural templates — they reflect the real Qt Design Studio naming and organisation patterns. Qt 5 note: the examples use versioned imports (`import QtQuick 2.15`), as required by Qt 5.
 
 ---
 
@@ -88,9 +88,14 @@ Create `main.cpp` with this exact content — use `QGuiApplication`, **not** `QA
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    QQmlApplicationEngine engine;
 
-    engine.loadFromModule("<ProjectName>", "Main");
+    // Register the design-system singletons (Qt 5 has no build-system
+    // QML module registration). The URIs must match the imports used
+    // in QML files, e.g. `import <ProjectName>.DesignSystem 1.0`.
+    // See Step 7 — written once the QML file list is known.
+
+    QQmlApplicationEngine engine;
+    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 
     if (engine.rootObjects().isEmpty())
         return -1;
@@ -99,14 +104,15 @@ int main(int argc, char *argv[])
 }
 ```
 
-Replace `<ProjectName>` with the URI used in `qt_add_qml_module()` — they must match exactly.
+> **Qt 5 resource paths.** There is no `loadFromModule()` in Qt 5 and
+> no implicit `qrc:/qt/qml/` prefix — that is Qt 6 machinery. The load
+> URL must match the `.qrc` `<prefix>`/`<file>` entries exactly, e.g.
+> `qrc:/main.qml` for `<qresource prefix="/"><file>main.qml</file></qresource>`.
 
-> **Do not use the old `QUrl url(u"qrc:/..."_qs)` pattern.** In Qt 6, `qt_add_qml_module` places files under `qrc:/qt/qml/<URI>/` — not `qrc:/<URI>/` as in Qt 5. Using the old path causes a silent load failure. `loadFromModule()` avoids this entirely and is the correct approach for Qt 6.5+.
-
-Create `Main.qml` as a placeholder — **capital M, not lowercase**. `loadFromModule()` is case-sensitive and looks for a type named `Main`, which maps to `Main.qml`:
+Create `main.qml` as a placeholder:
 
 ```qml
-import QtQuick
+import QtQuick 2.15
 
 Window {
     width:   640
@@ -116,7 +122,12 @@ Window {
 }
 ```
 
-> **CMake setup:** The full CMakeLists.txt — including singleton registration — is written in Step 7 once all QML files are known. Do not write it now. If the user encounters any build configuration issues, suggest the user check Qt's CMake documentation at https://doc.qt.io/qt-6/cmake-get-started.html rather than troubleshooting inline.
+> **CMake setup:** The full CMakeLists.txt — including singleton
+> registration — is written in Step 7 once all QML files are known. Do
+> not write it now. If the user encounters any build configuration
+> issues, suggest the user check Qt's CMake documentation at
+> https://doc.qt.io/qt-5.15/cmake-get-started.html rather than
+> troubleshooting inline.
 
 ---
 
@@ -470,7 +481,9 @@ design-system/
 
 Generate in this order: Primitives first (it has no dependencies), then Spacing and FontInterface (independent), then Theme last (it references Primitives).
 
-> **No hand-written qmldir.** Module registration is handled by `qt_add_qml_module()` in CMakeLists.txt. Singleton registration uses `set_source_files_properties` — updated in Step 7.
+> **No hand-written qmldir needed.** The singletons are registered from
+> C++ with `qmlRegisterSingletonType(QUrl(...))` in `main.cpp` — set up
+> in Step 7. Qt 5 has no build-system QML module registration.
 
 ### Generation rules
 
@@ -481,9 +494,9 @@ Generate in this order: Primitives first (it has no dependencies), then Spacing 
 - Include the source comment and CMake note at the top of every file
 - Group related properties with section comments (`// ── Section name ─────`)
 - If a token is missing from the JSON, leave a `// TODO: <figmaName>` placeholder rather than guessing a value
-- **Imports:** Use `import QtQuick` — `import QtQuick.Window` is redundant in Qt 6 (Window is already included) but not an error if added
-- **Effects and gradients:** Use `MultiEffect` from `import QtQuick.Effects` (available from Qt 6.5). Never use `Qt5Compat.GraphicalEffects` — it requires an extra compatibility module and is not available in all Qt 6 configurations
-- **QML coding skill:** If the `qt-development-skills:qt-qml` skill is available, use it when generating QML files to ensure correct Qt 6 patterns are applied
+- **Imports:** Qt 5 requires version numbers on every module import — `import QtQuick 2.15`, and `import QtQuick.Window 2.15` when a file declares a `Window` outside `QtQuick.Controls`
+- **Effects and gradients:** Use the `QtGraphicalEffects` module (`import QtGraphicalEffects 1.15` — e.g. `GaussianBlur`, `DropShadow`, `Desaturate`). There is no `MultiEffect` / `QtQuick.Effects` in Qt 5
+- **QML coding skill:** If the `qt-qml` skill is available, use it when generating QML files to ensure correct Qt 5 patterns are applied
 
 ---
 
@@ -499,58 +512,98 @@ After generating all QML files, run a validation pass — do not skip any of the
 
 **CMakeLists.txt — mandatory update:**
 
-Always update `CMakeLists.txt` as part of this step — do not leave it to the user. Open the file, find the `qt_add_qml_module()` block, and ensure all generated design-system files are listed under `QML_FILES` and registered with `set_source_files_properties`. This is the most common cause of singletons not being accessible in QML.
+Always update `CMakeLists.txt` as part of this step — do not leave it to the user. Ensure all generated design-system files are listed in the project's `.qrc` and registered as singletons from `main.cpp`. This is the most common cause of singletons not being accessible in QML.
 
-> **Naming rule:** The target name, URI, and `loadFromModule()` call in `main.cpp` must all use the **same** project name string. Use the actual project name from the `project()` CMake call — do not substitute `MyProject` literally.
+> **Naming rule:** The project name, the registration URI, and the import in QML must all agree. Use the actual project name from the `project()` CMake call — do not substitute `MyProject` literally.
 
 ```cmake
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.5)
 project(<ProjectName> VERSION 0.1 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Version pin must match qt_standard_project_setup REQUIRES below
-find_package(Qt6 6.5 REQUIRED COMPONENTS Quick)
-qt_standard_project_setup(REQUIRES 6.5)
+# Qt 5 has no qt_standard_project_setup(): set the AUTO switches yourself.
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-# MACOSX_BUNDLE is required on macOS — without it, qt_add_qml_module creates
-# a directory named <ProjectName>/ which collides with the linker output file
-# (EISDIR error). MACOSX_BUNDLE makes the output MyQtApp.app, no collision.
-qt_add_executable(<ProjectName> MACOSX_BUNDLE
+find_package(Qt5 5.15 REQUIRED COMPONENTS Quick)
+
+add_executable(<ProjectName>
     main.cpp
+    qml.qrc
 )
 
-set_source_files_properties(
-    design-system/Primitives.qml
-    design-system/Theme.qml
-    design-system/Spacing.qml
-    design-system/FontInterface.qml
-    PROPERTIES QT_QML_SINGLETON_TYPE TRUE
-)
-
-qt_add_qml_module(<ProjectName>
-    URI <ProjectName>
-    VERSION 1.0
-    QML_FILES
-        Main.qml   # capital M — must match loadFromModule("<ProjectName>", "Main")
-        design-system/Primitives.qml
-        design-system/Theme.qml
-        design-system/Spacing.qml
-        design-system/FontInterface.qml
-    # NOTE: do NOT add main.cpp here — it belongs only in qt_add_executable()
-)
-
-target_link_libraries(<ProjectName> PRIVATE Qt6::Quick)
+target_link_libraries(<ProjectName> PRIVATE Qt5::Quick)
 ```
 
-Replace every `<ProjectName>` with the same string — e.g. `MyQtApp` — matching the `project()` call and the `loadFromModule("<ProjectName>", "Main")` call in `main.cpp`.
+`qml.qrc` (every QML file the app ships):
 
-After updating CMakeLists.txt, confirm with the user that the file has been saved and show them how to use the singletons in `Main.qml`:
+```xml
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>design-system/Primitives.qml</file>
+        <file>design-system/Theme.qml</file>
+        <file>design-system/Spacing.qml</file>
+        <file>design-system/FontInterface.qml</file>
+    </qresource>
+</RCC>
+```
+
+Singleton registration in `main.cpp` (before `engine.load(...)`):
+
+```cpp
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QtQml>
+
+static QObject *themeProvider(QQmlEngine *engine, QJSEngine *jsEngine)
+{
+    Q_UNUSED(engine)
+    return new Theme(jsEngine);   // the generated Theme type
+}
+
+int main(int argc, char *argv[])
+{
+    QGuiApplication app(argc, argv);
+
+    QString uri = QStringLiteral("<ProjectName>.DesignSystem");
+    qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/design-system/Primitives.qml")),
+                             uri.toUtf8().constData(), 1, 0, "Primitives");
+    qmlRegisterSingletonType(&themeProvider, uri.toUtf8().constData(), 1, 0, "Theme");
+    qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/design-system/Spacing.qml")),
+                             uri.toUtf8().constData(), 1, 0, "Spacing");
+    qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/design-system/FontInterface.qml")),
+                             uri.toUtf8().constData(), 1, 0, "FontInterface");
+
+    QQmlApplicationEngine engine;
+    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+    if (engine.rootObjects().isEmpty())
+        return -1;
+    return app.exec();
+}
+```
+
+Notes:
+
+- `qmlRegisterSingletonType(QUrl(...), ...)` points straight at the
+  generated files — each QML file must carry `pragma Singleton` at the
+  top (the generator already emits it).
+- For `Theme.qml`, which constructs a C++ object, use the factory form
+  so the object gets the engine as parent. Replace `Theme` with the
+  actual generated class or, when Theme is pure QML, register it with
+  the `QUrl` form like the others.
+- The URI and version here must match the import used in QML.
+
+After updating CMakeLists.txt and `main.cpp`, confirm with the user that the files have been saved and show them how to use the singletons in `main.qml`:
 
 ```qml
-import QtQuick         // Window is part of QtQuick in Qt 6 — do NOT add import QtQuick.Window
-import <ProjectName>   // imports all singletons from the module
+import QtQuick 2.15
+import <ProjectName>.DesignSystem 1.0
 
 Window {
     visible: true
@@ -560,7 +613,7 @@ Window {
 }
 ```
 
-> **CMake issues:** If the user has build errors after updating CMakeLists.txt, suggest the user check Qt's CMake documentation at https://doc.qt.io/qt-6/cmake-get-started.html rather than troubleshooting inline.
+> **CMake issues:** If the user has build errors after updating CMakeLists.txt, suggest the user check Qt's CMake documentation at https://doc.qt.io/qt-5.15/cmake-get-started.html rather than troubleshooting inline.
 
 ---
 
@@ -572,7 +625,7 @@ Give the user a brief summary and ask them to review the output:
 - Modes and themes captured
 - Any unresolved aliases or `// TODO:` placeholders that need attention
 - Files produced: `design-tokens.json`, `Primitives.qml`, `Theme.qml`, `Spacing.qml`, `FontInterface.qml`
-- Reminder that `set_source_files_properties(... QT_QML_SINGLETON_TYPE TRUE)` must be set in CMakeLists.txt for each singleton file
+- Reminder that every singleton must be registered in `main.cpp` with `qmlRegisterSingletonType(...)` (Qt 5 has no CMake-level singleton property) and listed in `qml.qrc`
 - Use the **Token Categories Checklist** at the end of this file to verify nothing was missed
 - Confirmation that the design system foundation is ready — the component generation skill can now begin
 

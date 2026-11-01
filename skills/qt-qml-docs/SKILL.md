@@ -15,9 +15,9 @@ compatibility: >-
   Designed for Claude Code, GitHub Copilot, and similar agents.
 disable-model-invocation: false
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.0"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: process
 ---
 

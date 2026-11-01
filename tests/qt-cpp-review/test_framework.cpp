@@ -6,5 +6,3 @@
 #if __has_include(<format>)
 #endif
 
-// PAT-6: make_unique for array (framework only)
-auto arr = std::make_unique<int[]>(100);

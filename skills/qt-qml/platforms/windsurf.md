@@ -1,13 +1,14 @@
 ---
 trigger: model_decision
-description: "Apply Qt6 QML best practices when writing or modifying QML code"
+description: "Apply Qt5 QML best practices when writing or modifying QML code"
 ---
 
 # QML Best Practices
 
-**Imports (Qt 6)**: No version numbers. No QtQuick.Window when
-QtQuick is imported. Use style-specific import for control
-customization. Qt 5 code requires version numbers.
+**Imports (Qt 5)**: Version numbers required on every module import
+(`import QtQuick 2.15`, `import QtQuick.Controls 2.15`,
+`import MyModule 1.0`). String imports (`import "qrc:/..."`) never
+take versions.
 
 **Bindings**: Prefer declarative `prop: expr` over imperative `=`.
 Imperative `=` permanently destroys bindings. Cache expensive
@@ -21,12 +22,12 @@ Do not anchor to invisible items or across tree branches.
 No Qt.createComponent(url) strings -- use inline Component {}.
 createObject() only when parent is dynamic.
 
-**Delegates**: Use `required property` for roles. Keep delegates
-minimal. reuseItems: true (Qt 6.7+), reset in onPooled. No mutable
-JS vars in delegates.
+**Delegates**: Use `required property` for roles (Qt 5.15+). Keep
+delegates minimal. reuseItems: true (Qt 5.15+), reset in onPooled.
+No mutable JS vars in delegates.
 
-**States**: No `target` in PropertyChanges (Qt 6); use
-`id.prop: val`. Target transitions with from/to.
+**States**: PropertyChanges uses `target: id; prop: val` in Qt 5
+(`id.prop: val` is Qt 6 only). Target transitions with from/to.
 
 **Images**: Always set sourceSize. asynchronous: true for network
 or large files. Check Image.status.

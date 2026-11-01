@@ -1,13 +1,13 @@
 ---
 trigger: model_decision
-description: "Review Qt6 QML code for correctness and best practices"
+description: "Review Qt5 QML code for correctness and best practices"
 ---
 
 # Qt QML Review
 
-**Imports**: No versioned imports in Qt 6. No QtQuick.Window when
-QtQuick imported. Use style-specific import for control customization.
-Sort: Qt modules, third-party, local, QML folders.
+**Imports**: Version numbers required on every module import
+(`import QtQuick 2.15`). Sort: Qt modules, third-party, local, QML
+folders. `QtGraphicalEffects 1.15` is the correct effects module.
 
 **Bindings**: Use typed properties not `property var`. Imperative `=`
 destroys bindings. Watch for multi-cycle binding loops.
@@ -20,16 +20,17 @@ anchor to invisible items. No parent.parent in anchor targets.
 Qt.createComponent(url) strings. No Qt.createQmlObject(). Track and
 destroy dynamic objects.
 
-**Delegates**: Use `required property` for roles. Also declare
-`required property int index` when index is accessed. No var in
-delegates with reuseItems. No connect() in Component.onCompleted.
+**Delegates**: Use `required property` for roles (Qt 5.15+). Also
+declare `required property int index` when index is accessed. No var
+in delegates with reuseItems. No connect() in Component.onCompleted.
 
-**States**: Qt 6 PropertyChanges: `id.prop: val` not `target: id`.
-Transitions need explicit from/to. No imperative = in PropertyChanges.
+**States**: PropertyChanges uses `target: id; prop: val` (the Qt 5
+form; `id.prop: val` is Qt 6 only). Transitions need explicit
+from/to. No imperative = in PropertyChanges.
 
 **Signals**: Connections must have explicit target. Use
-`function onFoo()` syntax. Never mix old and new syntax in same
-Connections block.
+`function onFoo()` syntax (Qt 5.15+). Never mix old and new syntax in
+same Connections block.
 
 **Performance**: Use Item not transparent Rectangle for grouping.
 visible: false not opacity: 0. Text.PlainText when possible. Cache

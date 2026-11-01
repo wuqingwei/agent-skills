@@ -9,7 +9,7 @@
 //   font.family:    FontInterface.titilliumSemiBold.name
 //   text:           FontInterface.icons.close_16
 pragma Singleton
-import QtQuick
+import QtQuick 2.15
 
 QtObject {
     // ── Font loaders ──────────────────────────────────────────────────────────

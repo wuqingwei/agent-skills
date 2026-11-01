@@ -4,53 +4,43 @@ How to emit the `<source-import>` placeholder in the canonical
 template — the import line that makes the component under test
 visible to the test file.
 
+Qt 5 has no build-system QML modules: components reach QML either
+through `qmlRegisterType` C++ registration, through an on-disk
+`qmldir` module, or through plain file paths (`.qrc` or disk).
 Pick exactly one of the following forms and resolve in order;
 stop at the first match.
 
-## Form 1 — Declared module URI (library backing target only)
+## Form 1 — Registered module URI
 
-If the nearest `CMakeLists.txt` walking up from the source
-directory contains `qt_add_qml_module(<target> ... URI <URI> ...)`,
-check how `<target>` was declared:
+If the project registers the component's module in C++ or in a
+`qmldir`, emit an import with the module's version:
 
-- **`qt_add_library(<target> ...)`** (or plain `add_library`) —
-  the module produces a linkable `<target>plugin` that a test
-  binary can link to. Emit:
+- **`qmlRegisterType<MyType>("MyApp.Models", 1, 0, "MyType")`**
+  (or `qmlRegisterUncreatableType` / `qmlRegisterSingletonType`
+  with the same URI) in `main.cpp` or a registration header —
+  emit:
 
   ```qml
-  import <URI>
+  import MyApp.Models 1.0
   ```
 
-- **`qt_add_executable(<target> ...)`** — the module is built
-  into the executable; the auto-generated `<target>plugin`
-  does not exist as a linkable library, so URI-based imports
-  cannot be resolved from a sibling test binary. Do not emit
-  `import <URI>` in this case; use Form 2 (relative directory
-  import) instead. The QML engine reads source files from
-  disk through the relative path and resolves sibling types
-  via the on-disk `qmldir` (when present). For most
-  executable-backed projects this works **without any
-  refactor** — do not mention the "module-on-executable
-  refactor" in the final reply.
+  Use the exact URI and major.minor from the registration call.
 
-  The refactor (splitting the module into a `STATIC` library)
-  is only required when a test specifically needs
-  `import <URI>` — for example, to exercise a singleton
-  registered via `QT_QML_SINGLETON_TYPE TRUE` in CMake, or
-  types that are not listed in any on-disk `qmldir`. In those
-  rare cases, surface the refactor in the final reply and
-  point at the `qt-qml-test-run` skill which can apply it.
+- **An on-disk `qmldir` containing `module <URI>`** (a QML module
+  directory shipped on disk or in the resource system) with type
+  entries covering the component — emit the same versioned import
+  and make sure the test run adds the module's parent directory
+  to the import path (`-import <dir>` for `qmltestrunner`, or the
+  harness calls `engine.addImportPath(...)`).
 
-A standalone `qmldir` containing `module <URI>` without a
-matching `qt_add_qml_module(... URI <URI>)` is rare in modern
-Qt 6 projects and usually leftover from an older layout;
-treat it as advisory only.
+Do not emit an unversioned import: Qt 5 requires
+`import <URI> <major>.<minor>`.
 
 ## Form 2 — Relative directory import
 
-Otherwise (or as the fallback from Form 1's executable case),
-the source is reached via file path. Compute the relative
-path from the test file's directory to the source file's
+Otherwise (and as the fallback when Form 1's registration cannot
+be confirmed), the source is reached via file path. Compute the
+relative path from the test file's directory to the source file's
 directory and emit:
 
 ```qml
@@ -60,6 +50,16 @@ import "<relative-path>"
 For the default destination (`tests/tst_<X>.qml` next to a
 source at the project root), this is `import ".."`. For a
 source under `app/` it is `import "../app"`.
+
+The QML engine reads the source files from disk (or from the
+matching resource path) and resolves sibling types via the
+on-disk `qmldir` when one exists. Relative imports work for
+files inside the resource system too, as long as both test and
+source live under the same `qrc` prefix; a test file on disk
+cannot relatively import a file that only exists inside a `.qrc`
+— in that case the project must expose the component through a
+registration (Form 1) or the test must load the file by resource
+URL (see the Window variant in `qt-quick-test-template.md`).
 
 ## Hard rule
 

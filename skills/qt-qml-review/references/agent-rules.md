@@ -1,4 +1,4 @@
-# Qt6 QML Review -- Deep-Analysis Agent Rules
+# Qt5 QML Review -- Deep-Analysis Agent Rules
 
 Semantic checks that need symbol tracing or cross-file reasoning and
 therefore cannot be expressed as linter regexes. Grouped by review
@@ -61,15 +61,11 @@ nothing, say so in one line.
   `undefined` until every intermediate component has finished
   initialisation, and aliases are inactive during construction.
 - **Unqualified lookup.** Bare `someProperty` instead of
-  `root.someProperty` resolves through the dynamic scope chain and
-  blocks `qmlsc`. Complements qmllint's `unqualified` warning with
-  the semantic reason.
+  `root.someProperty` resolves through the dynamic scope chain --
+  slower, fragile under renames, and shadowing-prone. Use qualified
+  lookup via an explicit id.
 - **`Qt.binding()` closures capturing loop variables** declared with
   `var` (function scope) -- every closure sees the last value.
-- **Missing `pragma ComponentBehavior: Bound`** in files whose
-  delegates or inline components reach outer-scope ids. With the
-  pragma, data must flow via `required property`. Qt intends to make
-  `Bound` the default.
 - **Missing `readonly`** on properties that are bound once and never
   imperatively assigned.
 
@@ -105,8 +101,8 @@ nothing, say so in one line.
   evaluate to `undefined` is not).
 - **Context properties** (`rootContext()->setContextProperty()`) in
   the accompanying C++: re-evaluated on every access, globally scoped,
-  invisible to tooling, prevents compilation. Prefer `QML_ELEMENT`,
-  singletons, or `createWithInitialProperties`.
+  invisible to tooling. Prefer `qmlRegisterSingletonType` or
+  `QQmlComponent::createWithInitialProperties` with registered types.
 - **Ownership at the QML/C++ boundary.** The engine takes ownership
   of `QObject`s returned from `Q_INVOKABLE` methods but not from
   properties. Parentless objects returned from invokables without an
@@ -143,9 +139,11 @@ nothing, say so in one line.
 - **`restoreEntryValues` surprises.** `PropertyChanges` defaults to
   `restoreEntryValues: true`, so values written imperatively while in
   a state revert on exit. Flag code that expects them to persist.
-- **`Binding.restoreMode` default change.** Qt 5 `RestoreNone` became
-  Qt 6 `RestoreBindingOrValue`. Migrated code relying on a `Binding`
-  "sticking" after `when` turns false silently reverts.
+- **`Binding` deactivation surprises.** Qt 5.15+ has `restoreMode`; on
+  older Qt 5 versions a deactivated `Binding { when: ... }` simply
+  removes the binding and the property keeps the last written value.
+  Do not rely on the default -- set `restoreMode` explicitly (5.15+)
+  or re-create the binding manually.
 - **Component-level `states` in a reusable type** that the linter
   did not flag (STA-3 only fires when `required property` is present).
   `states` is a list property; external assignment appends rather than
@@ -187,7 +185,7 @@ nothing, say so in one line.
   (it is the Loader), or Popups (it is the overlay). `parent` can also be `null` during
   creation and destruction.
 - **Heavy JavaScript blocks.** Large imperative JS forces interpreter
-  fallback and blocks `qmlsc`; move logic to C++ or bindings.
+  fallback on hot paths; move logic to C++ or bindings.
 
 ## A7. Logic & Wiring
 

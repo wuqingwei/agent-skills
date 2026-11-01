@@ -12,9 +12,9 @@ compatibility: >-
 disable-model-invocation: false
 argument-hint: "[--wire-up] [--no-build] [--no-report] [<path-or-dir>]"
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.0"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: tool
 ---
 
@@ -27,7 +27,7 @@ for a QML project, then write a structured Markdown report.
 
 In scope:
 
-- Building a Qt 6 / CMake project that contains
+- Building a Qt 5 / CMake project that contains
   `tst_*.qml` files.
 - **Opt-in** wiring up of missing test infrastructure
   (with `--wire-up`: writes `tests/CMakeLists.txt` and
@@ -93,9 +93,9 @@ common install roots:
 
 | OS | Compiler subdir | Suffix | PATH lookup | Common roots |
 |---|---|---|---|---|
-| Linux | `gcc_64` | *(none)* | `which` | `/home/*/Qt/6.*`, `/opt/Qt/6.*`, `/usr/lib/qt6` |
-| macOS | `macos` | *(none)* | `which` | `/Users/*/Qt/6.*`, `/Applications/Qt/6.*` |
-| Windows | `msvc2022_64`, `msvc2019_64`, `mingw_64` | `.exe` | `where` | `C:\Qt\6.*`, `%USERPROFILE%\Qt\6.*` |
+| Linux | `gcc_64` | *(none)* | `which` | `/home/*/Qt5.*/5.*/gcc_64`, `/opt/Qt/5.*`, `/usr/lib/qt5` |
+| macOS | `clang_64` | *(none)* | `which` | `/Users/*/Qt5.*/5.*`, `/opt/Qt/5.*` |
+| Windows | `msvc2019_64`, `mingw81_64` | `.exe` | `where` | `C:\Qt\5.*`, `%USERPROFILE%\Qt5.*` |
 
 Find a Qt installation containing `bin/qmltestrunner` (or
 `bin\qmltestrunner.exe` on Windows). Try in order, stop at
@@ -104,7 +104,7 @@ the first match:
 1. **CLAUDE.md** — look for a `CMAKE_PREFIX_PATH` or explicit
    Qt path.
 2. **Environment** — check `$CMAKE_PREFIX_PATH`, `$QTDIR`,
-   `$Qt6_DIR` (`%CMAKE_PREFIX_PATH%` etc. on Windows).
+   `$Qt5_DIR` (`%CMAKE_PREFIX_PATH%` etc. on Windows).
 3. **PATH** — `which qmltestrunner` (Linux/macOS) or
    `where qmltestrunner` (Windows); strip the trailing
    `/bin/qmltestrunner` to get `<qt-path>`.
@@ -162,19 +162,19 @@ Three run modes:
 
 Direct `qmltestrunner` invocation works for any `tst_*.qml`
 whose imports resolve from the test directory — typically
-relative imports like `import ".."`. Prefer it when no
+relative imports like `import ".."`, or on-disk `qmldir`
+modules reachable via `-import <dir>`. Prefer it when no
 wiring is in place, then offer Step 5 wire-up as an opt-in.
 
-**Exception:** when the project's QML modules are backed by
-**STATIC** libraries (`qt_add_library(... STATIC ...)` followed
-by `qt_add_qml_module(<same-target> ...)`), direct
-`qmltestrunner` cannot load them — at runtime the auto-generated
-plugin is also static, there is no shared object to `dlopen`,
-and every `import <URI>` resolves to "module is not installed".
-For any `tst_*.qml` that uses `import <URI>` against such a
-module, **wire-up is the only working path**; skip the Step 4b
-direct-mode offer and route straight to Step 5. See
-[qt-quick-test-cmake.md § Additional detection — backing target type](references/qt-quick-test-cmake.md#additional-detection--backing-target-type).
+**Exception:** when a `tst_*.qml` imports a URI whose types are
+registered from C++ (`qmlRegisterType`/`qmlRegisterSingletonType`
+in a project library), direct `qmltestrunner` cannot resolve
+them — the registration only runs inside a binary that links
+the registering library. `-import` paths only surface
+`qmldir`-declared file modules, not C++ registrations. For any
+such test, **wire-up is the only working path**; skip the Step
+4b direct-mode offer and route straight to Step 5. See
+[qt-quick-test-cmake.md § Additional detection](references/qt-quick-test-cmake.md#additional-detection--how-the-project-exposes-its-qml-types).
 
 ### Step 4 — Detect existing CMake test wiring
 
@@ -202,48 +202,40 @@ present and **skip Steps 4b and 5**. Proceed to Step 6.
 Otherwise, the project has no QuickTest wiring. Proceed to
 Step 4a, then Step 4b.
 
-### Step 4a — Module-on-executable check
+### Step 4a — Project QML type exposure check
 
-After Step 4 confirms a CMake project, grep its
-CMakeLists.txt files for `qt_add_qml_module(<target> ...)`
-where `<target>` was declared by `qt_add_executable`. When
-this matches, no separate `<target>plugin` is generated.
-**This only blocks tests that use `import <URI>`** — tests
-using relative imports (`import ".."`, `import "../widgets"`)
-read source QML from disk and resolve sibling types via the
-on-disk `qmldir`, no refactor needed.
+After Step 4 confirms a CMake project, determine how the tests
+can reach the project's own QML types. Grep the project's
+`main.cpp` / registration headers for
+`qmlRegisterType` / `qmlRegisterSingletonType` /
+`qmlRegisterUncreatableType`, and the CMakeLists.txt files for
+the library target that contains them.
 
 Decide based on the actual content of the `tst_*.qml` files
 discovered in Step 2:
 
-- **All `tst_*.qml` use relative imports only** — no
-  refactor needed. Proceed to Step 5 with the starter
-  `tests/CMakeLists.txt` (project-plugin link lines kept
+- **All `tst_*.qml` use relative imports only** (or import
+  on-disk `qmldir` modules reachable via `-import`) — no
+  link changes needed. Proceed to Step 5 with the starter
+  `tests/CMakeLists.txt` (project-library link line kept
   commented).
-- **One or more `tst_*.qml` contain `import <URI>`** matching
-  the executable's QML module — those tests cannot load
-  without the refactor. For symptom/cause detail see
-  [qt-quick-test-cmake.md § Module-on-executable failure modes](references/qt-quick-test-cmake.md#module-on-executable-failure-modes).
+- **One or more `tst_*.qml` contain `import <URI>`** whose
+  types come from a C++ registration — the test harness must
+  link the library that performs the registration. For
+  symptom/cause detail see
+  [qt-quick-test-cmake.md § Common failure modes](references/qt-quick-test-cmake.md#common-failure-modes-after-wiring).
 
-When the refactor IS needed (URI-import case only):
+When the link IS needed (URI-import case only):
 
-**Caution:** the refactor is invasive — it changes resource
-paths from `qrc:/<URI>/...` to `qrc:/qt/qml/<URI>/...` and
-may break downstream consumers linking the old executable.
-See [qt-quick-test-cmake.md § Module-on-executable refactor](references/qt-quick-test-cmake.md#module-on-executable-refactor)
-for full implications. Commit before approving so
-`git checkout` can revert.
-
-- **Without `--wire-up`**: print the refactor recipe from
+- **Without `--wire-up`**: print the wiring recipe from
   cmake.md alongside the standard Step 5d output, and
   explain that the URI-import tests will not load until the
-  QML module is split. Stop after Step 5.
-- **With `--wire-up`**: apply the refactor per
-  [qt-quick-test-cmake.md § Module-on-executable refactor](references/qt-quick-test-cmake.md#module-on-executable-refactor)
-  only after explicit user confirmation. The
-  `tests/CMakeLists.txt` from Step 5a should then link
-  `<name>module` and `<name>moduleplugin` instead of the commented
-  placeholder.
+  project library is linked into the harness. Stop after
+  Step 5.
+- **With `--wire-up`**: fill the
+  `target_link_libraries` placeholder in the 5a template
+  with the registering library's target name instead of the
+  commented placeholder.
 
 ### Step 4b — Propose direct `qmltestrunner` first
 
@@ -261,13 +253,11 @@ imports such as `import ".."`, or imports satisfied by
 holds — direct mode cannot work and the user should not be
 asked to choose it:
 
-- The project declares one or more
-  `qt_add_qml_module(<lib> ...)` where `<lib>` was created with
-  `qt_add_library(... STATIC ...)`, AND any discovered
-  `tst_*.qml` contains an `import <URI>` matching one of those
-  modules. (Static plugin → nothing to `dlopen` → "module is
-  not installed".)
-- The project's `find_package(Qt6 ... COMPONENTS …)` list
+- Any discovered `tst_*.qml` imports a URI whose types come
+  from a C++ `qmlRegisterType`/`qmlRegisterSingletonType`
+  registration (Step 4a). Direct `qmltestrunner` cannot run
+  those registrations — wire-up is the only working path.
+- The project's `find_package(Qt5 ... COMPONENTS …)` list
   contains `Widgets` / `Charts` / `WebEngineWidgets` / similar,
   AND any discovered `tst_*.qml` transitively instantiates a
   type from those modules. The widget-aware harness is needed

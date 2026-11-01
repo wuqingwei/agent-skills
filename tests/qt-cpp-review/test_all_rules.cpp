@@ -23,8 +23,6 @@ void iterateOld(QList<int> items) {
     }
 }
 
-// DEP-6: QSharedDataPointer (not QExplicitlySharedDataPointer)
-QSharedDataPointer<MyData> dataPtr;
 
 // DEP-7: qMin/qMax/qBound
 int clamped = qMin(a, qMax(b, c));
@@ -75,8 +73,6 @@ if (Q_UNLIKELY(ptr == nullptr)) qWarning("null");
 #include <format>
 #endif
 
-// PAT-6: make_unique for array
-auto arr = std::make_unique<int[]>(100);
 
 // PAT-7: QMap usage
 QMap<QString, int> mapping;

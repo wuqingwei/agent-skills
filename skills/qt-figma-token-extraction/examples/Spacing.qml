@@ -7,7 +7,7 @@
 //   padding:        Spacing.x4        // 8 px
 //   radius:         Spacing.radius_m
 pragma Singleton
-import QtQuick
+import QtQuick 2.15
 
 QtObject {
     // ── Base spacing scale ────────────────────────────────────────────────────

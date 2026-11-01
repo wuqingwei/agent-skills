@@ -1,4 +1,4 @@
-# Qt6 QML Review Checklist (linter rules)
+# Qt5 QML Review Checklist (linter rules)
 
 Rationale for every rule enforced by `qt_qml_lint.py`. The linter
 message carries the actionable part; this file is the long-form
@@ -13,41 +13,31 @@ when a mitigation needs more background than the message gives.
 
 ## 1. Imports
 
-### IMP-1: Redundant QtQuick.Window
-`import QtQuick.Window` is unnecessary when `import QtQuick` is
-present. In Qt 6, Window types were folded into the QtQuick module.
-
-### IMP-2: Versioned imports
-Qt 6 dropped the requirement for version numbers on all imports.
-Versioned imports (`import QtQuick 2.15`) cap the API surface and
-cause "missing type" confusion.
-
-### IMP-3: Plain Controls import with customization
-When customizing `contentItem`, `background`, `indicator`, or
-`handle`, import a specific style (`QtQuick.Controls.Basic`) rather
-than plain `QtQuick.Controls`. The default style abstraction layer
-can produce unexpected rendering.
+### IMP-2: Unversioned imports
+Qt 5 requires explicit major.minor versions on every module import.
+`import QtQuick` alone fails to resolve ("module not installed").
+Always write `import QtQuick 2.15`, `import QtQuick.Controls 2.15`,
+`import MyModule 1.0`, etc. Versionless imports are a Qt 6 relaxation.
+(String imports such as `import "qrc:/..."` never take versions.)
 
 ### IMP-4: Import ordering
 Order imports: Qt modules first, then third-party, then local C++,
-then QML folder imports. Consistent ordering aids readability and
-matches `qmlformat --sort-imports`.
+then QML folder imports. Consistent ordering aids readability.
 If this causes shadowing issues, because types with the same name
 are defined in various modules, use a namespaced import:
-`import mymodule as MM`
+`import mymodule 1.0 as MM`
 
 ### IMP-5: Qt.include() deprecated
-`Qt.include()` was deprecated in Qt 5.14 and removed from Qt 6
-documentation. Use ES module imports or explicit QML imports.
+`Qt.include()` was deprecated in Qt 5.14. Use ES module imports or
+explicit QML imports instead.
 
 ### IMP-6: Duplicate imports
 The same module imported more than once. Remove the duplicate.
 
-### IMP-7: Qt 5 graphical effects import
-`QtGraphicalEffects` does not exist in Qt 6 and
-`Qt5Compat.GraphicalEffects` is a migration bridge only. Use
-`MultiEffect` from `QtQuick.Effects` (Qt 6.5+), which combines blur,
-shadow and colorization in a single pass.
+### Note: QtGraphicalEffects is correct in Qt 5
+`import QtGraphicalEffects 1.15` is the standard Qt 5 way to get
+blur, glow, desaturation and similar effects. (`MultiEffect` and
+`QtQuick.Effects` are Qt 6.5+ and do not exist in Qt 5.)
 
 ---
 
@@ -81,9 +71,8 @@ animation types, State, Transition, PropertyChanges) are exempt.
 
 ### BND-1: property var
 Use typed properties (`int`, `string`, `color`, etc.) instead of
-`property var`. Typed properties enable `qmlsc` compilation to C++,
-eliminate meta-object overhead, and allow `qmllint` type checking.
-Matches qmllint's `prefer-non-var-properties` warning.
+`property var`. Typed properties enable type checking and cheaper
+property access, and eliminate meta-object overhead.
 
 ### BND-2: Imperative = destroys binding
 Any `property = value` in JavaScript permanently replaces the
@@ -158,12 +147,13 @@ behavior is unspecified.
 ## 6. ListView & Delegates
 
 ### DEL-1: model.roleName without required property
-Modern Qt 6 best practice is to declare `required property` for each
-model role. Once any required property is declared, the implicit
+Modern best practice (Qt 5.15+) is to declare `required property` for
+each model role. Once any required property is declared, the implicit
 `model` context object is no longer injected (but can also be explicitly
-requested as a `required property`). Required properties
-enable compilation, eliminate `unqualified` warnings and have generally
-better tooling support (e.g. in qmlls, qmllint).
+requested as a `required property`). Required properties give type
+safety and better tooling support. On Qt 5 versions older than 5.15 the
+`model.<role>` access is the only option — this rule still helps flag
+the migration to 5.15+ code.
 
 ### DEL-2: state in delegate with reuseItems
 With `reuseItems: true`, a delegate is pooled and rebound rather
@@ -189,10 +179,11 @@ context and is an agent rule, A4.)
 
 ## 7. States & Transitions
 
-### STA-1: PropertyChanges target: syntax (Qt 6)
-Qt 6 prefers `PropertyChanges { myId.property: value }` syntax. The old
-`target: myId; property: value` form still works but should only be used
-with ui.qml files used with Qt Design Studio.
+### STA-1: PropertyChanges syntax (retired for Qt 5)
+`PropertyChanges { target: myId; property: value }` is the correct and
+only form in Qt 5. The `PropertyChanges { myId.property: value }`
+syntax is a Qt 6 relaxation and does not parse on Qt 5. This rule is
+therefore not enforced by the linter for Qt 5 code.
 
 ### STA-2: Transition without from/to
 A `Transition {}` without explicit `from`/`to` fires on every state
@@ -323,7 +314,7 @@ for cross-platform temporary file access.
 ### JS-2: Loose equality
 Loose equality (`==`/`!=`) performs type coercion, which is almost
 never desired in QML property comparisons. Use strict equality
-(`===`/`!==`). Matches qmllint's `equality-type-coercion` warning.
+(`===`/`!==`).
 
 ### JS-3: Dynamic code execution
 Dynamic JS code execution (such as the `eval` function) blocks JIT

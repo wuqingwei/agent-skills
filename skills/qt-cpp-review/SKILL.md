@@ -2,8 +2,8 @@
 name: qt-cpp-review
 description: >-
   Invoke when the user asks to review, check, audit, or look
-  over Qt6 C++ code — or suggest before committing. Runs
-  deterministic linting (60+ rules) then deep-analysis agents
+  over Qt5 C++ code — or suggest before committing. Runs
+  deterministic linting (55+ rules) then deep-analysis agents
   (scaled to the size of the change) covering model
   contracts, ownership, threading, API correctness, error
   handling, and performance. Reports only high-confidence issues
@@ -13,16 +13,16 @@ license: LicenseRef-Qt-Commercial OR BSD-3-Clause
 compatibility: Designed for Claude Code, GitHub Copilot, and similar agents.
 disable-model-invocation: false
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "3.0"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: review
 argument-hint: "[framework]"
 ---
 
 # Qt Code Review
 
-Read-only review of Qt6 C++ code: a deterministic Python linter
+Read-only review of Qt5 C++ code: a deterministic Python linter
 first, then agent-driven deep analysis across six rule domains,
 then one consolidated report.
 
@@ -34,7 +34,7 @@ then one consolidated report.
 
 ## Arguments
 
-- `/qt-cpp-review` — universal Qt6 C++ rules
+- `/qt-cpp-review` — universal Qt5 C++ rules
 - `/qt-cpp-review framework` — also apply Qt framework/module rules
   (binary compatibility, exports, d-pointers, qdoc, QML versioning)
 

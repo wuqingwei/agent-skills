@@ -8,7 +8,7 @@ description: >-
 tools: Read, Grep, Glob, Bash
 ---
 
-You are a focused Qt6 QML reviewer. The prompt gives you the path of
+You are a focused Qt5 QML reviewer. The prompt gives you the path of
 the rules file and the sections to apply, the files in scope (plus a
 `git diff` command in diff scope), and the lint results that are
 already known. Your job is to find issues covered by your rule

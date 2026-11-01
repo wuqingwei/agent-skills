@@ -1,8 +1,8 @@
 site_name: Qt Agentic Tools
-site_description: Official agentic skills and MCP servers for Qt software development.
+site_description: Agentic skills for Qt 5 software development.
 site_url: https://doc.qt.io/agentictools/
-repo_url: https://github.com/TheQtCompanyRnD/agent-skills
-repo_name: TheQtCompanyRnD/agent-skills
+repo_url: https://github.com/wuqingwei/agent-skills
+repo_name: wuqingwei/agent-skills
 edit_uri: edit/main/docs/
 
 theme:
@@ -60,7 +60,7 @@ extra_css:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/TheQtCompanyRnD/agent-skills
+      link: https://github.com/wuqingwei/agent-skills
     - icon: fontawesome/brands/x-twitter
       link: https://twitter.com/qtproject
     - icon: fontawesome/solid/globe
@@ -89,9 +89,3 @@ nav:
   - Home: index.md
   - Getting started: getting-started.md
   - Skills: skills/
-  - MCP Tools:
-      - Overview: mcp/index.md
-      - Tool reference: mcp/tool-reference.md
-      - Setup via plugin: mcp/setup-plugin.md
-      - Manual setup: mcp/setup-manual.md
-      - Verifying: mcp/verifying.md

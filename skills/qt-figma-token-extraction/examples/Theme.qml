@@ -11,7 +11,7 @@
 //       To switch themes at runtime, replace the singleton instance
 //       or bind property values to a theme state in your app root.
 pragma Singleton
-import QtQuick
+import QtQuick 2.15
 
 QtObject {
     // ── Base ──────────────────────────────────────────────────────────────────

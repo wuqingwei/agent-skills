@@ -5,7 +5,7 @@ description: "Generate Qt Quick Test cases for QML components using TestCase, Si
 # Qt Quick Test generation
 
 Generate a Qt Quick Test unit test (`tst_*.qml`) for the
-provided QML code. The test must compile under Qt 6 and follow
+provided QML code. The test must compile under Qt 5 (5.15+) and follow
 every rule below.
 
 ## Output contract
@@ -33,10 +33,10 @@ including custom coding standards.
 ### Base template
 
 ```qml
-import QtQuick
-import QtTest
+import QtQuick 2.15
+import QtTest 1.15
 
-<source-import>  // resolved per "Resolving the source import" below — e.g. `import MyModule` or `import ".."`
+<source-import>  // resolved per "Resolving the source import" below — e.g. `import MyModule 1.0` or `import ".."`
 
 Item {
     id: root
@@ -68,28 +68,17 @@ Derive the component type name from the file path:
 Replace `<source-import>` with exactly one of the following.
 Resolve in this order and stop at the first match:
 
-1. **Declared module URI — only when the backing target is a
-   library.** If the nearest `CMakeLists.txt` contains
-   `qt_add_qml_module(<target> ... URI <URI> ...)`, check how
-   `<target>` was declared:
-   - `qt_add_library(<target> ...)` (or plain `add_library`) —
-     the module produces a linkable `<target>plugin` that the
-     test binary can link to. Emit `import <URI>`.
-   - `qt_add_executable(<target> ...)` — the auto-generated
-     `<target>plugin` does not exist as a linkable library,
-     so URI-based imports cannot be resolved from a sibling
-     test binary. Do not emit `import <URI>`; use option 2
-     (relative directory import) instead. The QML engine
-     reads source files from disk and resolves sibling types
-     via the on-disk `qmldir`, so for most executable-backed
-     projects this works **without any refactor** — do not
-     mention the "module-on-executable refactor" in the
-     reply. The refactor is only required when the test
-     specifically needs `import <URI>` (e.g. to exercise a
-     singleton registered via `QT_QML_SINGLETON_TYPE TRUE`
-     in CMake, or types not listed in any on-disk `qmldir`);
-     in those rare cases, surface the refactor and point at
-     the `qt-qml-test-run` skill which can apply it.
+1. **Registered module URI.** If the component is reachable
+   through a registration or module declaration —
+   `qmlRegisterType<MyType>("MyApp.Models", 1, 0, "MyType")`
+   (or `qmlRegisterSingletonType` / `qmlRegisterUncreatableType`)
+   in `main.cpp`, or an on-disk `qmldir` with
+   `module <URI>` covering the component — emit the versioned
+   import: `import MyApp.Models 1.0`, using the exact URI and
+   major.minor from the registration or `qmldir`. The test run
+   must add the module's parent directory to the import path
+   (`-import <dir>` for `qmltestrunner`, or
+   `engine.addImportPath(...)` in the harness).
 2. **Relative directory import.** Otherwise, the source is a
    loose QML file. Emit `import "<relative-path>"`, where
    `<relative-path>` is the path from the test file's
@@ -125,9 +114,9 @@ the test reaches via `findChild`. Always pass a non-empty
 `objectName`. Always follow with `verify(!!object, "Object
 exists")` (rule 5).
 
-## Testing rules (47 rules)
+## Testing rules (46 rules)
 
-1. Use `QtQuick` and `QtTest` modules without specifying versions.
+1. Use versioned imports: `import QtQuick 2.15`, `import QtTest 1.15` — Qt 5 requires versions on every module import.
 2. Set `Item` width and height appropriate to the tested component.
 3. When testing a single component, use direct reference:
    ```
@@ -189,16 +178,15 @@ exists")` (rule 5).
 
     Pick `<url>` by source location:
 
-    | Source's QML module backing | URL to use |
+    | Source location | URL to use |
     |---|---|
-    | `qt_add_library(... STATIC\|SHARED)` + `qt_add_qml_module(<lib> URI "<URI>" ...)` | `"qrc:/qt/qml/<URI>/<File>.qml"` |
-    | `qt_add_executable(<exe>)` + `qt_add_qml_module(<exe> URI "<URI>" ...)` | `Qt.resolvedUrl("../<File>.qml")` |
-    | Source on disk, no CMake info available | `Qt.resolvedUrl("../<File>.qml")` |
+    | Source inside the test binary's own `.qrc` | `"qrc:/<Prefix>/<Path>/<File>.qml"` (exactly as listed in the `.qrc`) |
+    | Source on disk, or only in the app's own `.qrc` | `Qt.resolvedUrl("../<File>.qml")` |
 
-    - The qrc form survives symlinks, `-input <other-dir>` runs, and test-tree relocation — but is unreachable from a sibling test binary when the source belongs to an executable-backed module (the qrc lives in the app, not the test).
+    - The qrc form survives symlinks, `-input <other-dir>` runs, and test-tree relocation — but only works when the `.qrc` is part of the test's own binary or a linked library.
     - `Qt.resolvedUrl("../<File>.qml")` is portable and machine-independent; it breaks only under symlinked test trees, where the URL resolves against the symlink rather than its target.
     - Use absolute `file:///<absolute>/<File>.qml` **only** as an escape hatch for that symlink case. Never as the default — it hardcodes machine layout and embeds the developer's home directory.
-42. **Sources marked `pragma Singleton`** (or registered via `QT_QML_SINGLETON_TYPE TRUE` in CMake) are accessed by name, not instantiated. The test imports the singleton's module and reads/writes its properties directly (`MySingleton.someProperty = ...`). Do not declare `Component { MySingleton {} }` — the QML engine refuses to instantiate singletons. For writable properties, restore the original value at the end of the test function so other tests run against a known state.
+42. **Sources marked `pragma Singleton`** (and listed with a `singleton` line in their module's `qmldir`) are accessed by name, not instantiated. The test imports the singleton's module and reads/writes its properties directly (`MySingleton.someProperty = ...`). Do not declare `Component { MySingleton {} }` — the QML engine refuses to instantiate singletons. For writable properties, restore the original value at the end of the test function so other tests run against a known state.
 43. **Never invoke a pointer handler's signal as a function.** `TapHandler.tapped`, `HoverHandler.hoveredChanged`, `DragHandler.translationChanged`, and similar signals declare required `(QEventPoint, Qt::MouseButton)` (or equivalent) arguments. Calling `tapHandler.tapped()` throws `Uncaught exception: Insufficient arguments` and fails the test. To exercise the handler, dispatch a real mouse event against the host visual item:
     ```
     mouseClick(hostItem, hostItem.width / 2, hostItem.height / 2)
@@ -217,9 +205,8 @@ exists")` (rule 5).
     }
     ```
     This applies to every click test, even when the source declares `implicitWidth`/`implicitHeight`.
-45. **Qt Quick 3D graphical-node sources** (`Model`, `Node`, `*Camera`, `*Light`, `Skybox`, `SceneEnvironment`, or other `QtQuick3D` node types needing a scene) wrapped in the canonical `Item { id: root }` template create the object but leave it outside any graphics scene — the test reports PASS while a runtime `QWARN: Created graphical object was not placed in the graphics scene` fires and rendering / interaction is uncovered. **Skip** these sources; note the skip and the type in the reply. View3D-rooted sources and Qt Quick 3D materials (`*Material`) fall through to the standard template.
-46. **Inner items the test would meaningfully exercise must declare `objectName`; items with only an `id` are unreachable from a sibling test file.** QML `id`s are scoped to the declaring document — `findChild` and every cross-document lookup resolves by `objectName`. When the source's test-worthy children (controls whose signals fire, properties the source mutates at runtime, effects whose values change on interaction) lack `objectName`, **skip the affected assertions** rather than fall back to fragile workarounds (`parent.children` indexing, `toString()` matching, visual-tree walks — all pass for the wrong reasons and break on cosmetic source edits). Outer-scope properties remain testable without `objectName`s and should still be covered: the Window's `title` / `visible`, root-component `property` aliases, singleton properties (rule 42). Applies to the nested-component and Window / ApplicationWindow variants; single-component and singleton variants do not reach into children.
-47. **Every test function must contain at least one assertion against state the test's actions are expected to change.** `compare`, `tryCompare`, or `tryCompare(spy, "count", N)` all qualify; existence checks (`verify(!!x, "Object exists")`, `verify(!!x, "Component exists")`) count as prerequisites, **not** as the test body. A function whose body is only setup + actions + `wait` passes regardless of behavior — it tests nothing. Mechanical check before emitting a generated test: scan each `test_*` function. If it contains a mouse, key, or property-write statement but no `compare` / `tryCompare` other than existence checks, either add the missing outcome assertion or omit the test — do not emit it as-is. For pointer-handler / signal flows, target a `SignalSpy` and `tryCompare` its `count`. For property mutation, `tryCompare` the property to its expected new value. For paths that should *not* change a property (cancel sequences), `tryCompare` the property to the unchanged value it should retain.
+45. **Inner items the test would meaningfully exercise must declare `objectName`; items with only an `id` are unreachable from a sibling test file.** QML `id`s are scoped to the declaring document — `findChild` and every cross-document lookup resolves by `objectName`. When the source's test-worthy children (controls whose signals fire, properties the source mutates at runtime, effects whose values change on interaction) lack `objectName`, **skip the affected assertions** rather than fall back to fragile workarounds (`parent.children` indexing, `toString()` matching, visual-tree walks — all pass for the wrong reasons and break on cosmetic source edits). Outer-scope properties remain testable without `objectName`s and should still be covered: the Window's `title` / `visible`, root-component `property` aliases, singleton properties (rule 42). Applies to the nested-component and Window / ApplicationWindow variants; single-component and singleton variants do not reach into children.
+46. **Every test function must contain at least one assertion against state the test's actions are expected to change.** `compare`, `tryCompare`, or `tryCompare(spy, "count", N)` all qualify; existence checks (`verify(!!x, "Object exists")`, `verify(!!x, "Component exists")`) count as prerequisites, **not** as the test body. A function whose body is only setup + actions + `wait` passes regardless of behavior — it tests nothing. Mechanical check before emitting a generated test: scan each `test_*` function. If it contains a mouse, key, or property-write statement but no `compare` / `tryCompare` other than existence checks, either add the missing outcome assertion or omit the test — do not emit it as-is. For pointer-handler / signal flows, target a `SignalSpy` and `tryCompare` its `count`. For property mutation, `tryCompare` the property to its expected new value. For paths that should *not* change a property (cancel sequences), `tryCompare` the property to the unchanged value it should retain.
 
 ## Top per-control patterns
 
@@ -359,10 +346,10 @@ function test_dialogAcceptsOnOk() {
 - **Testing `appControl` size, `anchors`, `currentIndex`,
   `cursorVisible`** (rules 8, 9, 10, 11) — all forbidden.
 - **Source descendants with only an `id`, no `objectName`**
-  (rule 46). `findChild` resolves by `objectName`; `id`s are
+  (rule 45). `findChild` resolves by `objectName`; `id`s are
   document-scoped. Skip the affected assertions rather than
   walk `parent.children` or match on `toString()`.
-- **No-op test functions** (rule 47). A `test_*` that mutates
+- **No-op test functions** (rule 46). A `test_*` that mutates
   input (mouse, key, property write) but ends without a
   `compare` / `tryCompare` against the affected output passes
   regardless of behavior. Add the outcome assertion or omit

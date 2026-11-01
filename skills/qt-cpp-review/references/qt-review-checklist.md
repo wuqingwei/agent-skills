@@ -1,4 +1,4 @@
-# Qt6 Code Review Checklist
+# Qt5 Code Review Checklist
 
 Distilled from the Qt Wiki "Things To Look Out For In Reviews".
 Each rule has a short ID for cross-referencing in review reports.

@@ -10,8 +10,8 @@
 //   Checkbox { label: "Accept terms"; checked: true }
 //   Checkbox { checkState: Qt.PartiallyChecked }   // indeterminate
 
-import QtQuick
-import QtQuick.Controls.Basic
+import QtQuick 2.15
+import QtQuick.Controls 2.15
 import DesignSystem
 
 CheckBox {

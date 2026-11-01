@@ -6,55 +6,54 @@ hide:
 
 <div class="qt-hero" markdown>
 
-# Qt Agentic Tools
+# Qt5 Agentic Tools
 
-Official agentic skills — portable, version-controlled knowledge
-packages that AI agents load on demand — plus MCP servers for Qt
-documentation lookup. Designed for AI coding tools in 2026 and
-beyond.
+Agentic skills — portable, version-controlled knowledge
+packages that AI agents load on demand — adapted for **Qt 5**
+(5.15 LTS) development. Designed for AI coding tools.
 
 Tested with frontier LLMs from the Claude, Gemini, and GPT model
-families. Built on the same brand bones as [doc.qt.io](https://doc.qt.io),
-tuned for the way agents read and write code.
+families. Ported from the official Qt AI Skills with every skill
+name preserved.
 
 [Get started →](getting-started.md){ .md-button .md-button--primary } &nbsp;
-[Browse skills →](skills/index.md){ .md-button } &nbsp;
-[MCP tools →](mcp/index.md){ .md-button }
+[Browse skills →](skills/index.md){ .md-button }
 
 </div>
 
-## Why Qt-official tools { #why-qt-official }
+## Why Qt5-specific tools { #why-qt5-official }
 
 Generic AI coding assistants treat Qt like any other C++ or
-JavaScript codebase. They guess at signal/slot syntax, miss
-declarative-QML idioms, and hallucinate APIs that haven't existed
-since Qt 5. These skills and MCP servers exist because Qt
-deserves better than guesses.
+JavaScript codebase — and most of their training material is
+Qt 6. Ask them to touch a Qt 5 project and they reach for
+`qt_add_qml_module`, drop import version numbers, and write
+`pragma ComponentBehavior`. These skills exist because Qt 5
+deserves better than Qt 6 guesses.
 
 <div class="qt-cards">
 
 <a class="qt-card">
-<strong>Qt-aware by design</strong>
-Authored by The Qt Company against real Qt 6 codebases. Skills
-encode Qt model-view contracts, parent-ownership rules, QML
-binding semantics, and the C++/QML boundary — the things LLMs
-get systematically wrong without help.
+<strong>Qt5-aware by design</strong>
+Ported against the Qt 5.15 API surface. Skills encode Qt 5
+CMake conventions (`AUTOMOC`, `.qrc`, `qt5_*` macros), versioned
+QML imports, `qmlRegisterType`-based type registration, and
+parent-ownership rules — the things LLMs get systematically
+wrong for Qt 5.
 </a>
 
 <a class="qt-card">
-<strong>Always-fresh docs</strong>
-Our hosted MCP server serves Qt 6.8.4 (LTS) and Qt 6.11.0
-documentation directly to your agent — no stale training data,
-no web search guesswork. Pinned to a
-version when you need it.
+<strong>Same skill names as upstream</strong>
+Every skill keeps its original name, so mixed toolchains and
+documentation written against the official Qt AI Skills keep
+working; only the guidance is Qt 5.
 </a>
 
 <a class="qt-card">
 <strong>Cross-tool, no lock-in</strong>
 One source format (`SKILL.md`) runs natively in Claude Code,
 Codex CLI, Gemini CLI, and GitHub Copilot. Skills are
-open-source under BSD-3-Clause — installable from this repo,
-the official MCP registry, or as a CLI plugin.
+open-source under BSD-3-Clause — installable from this repo
+or as a CLI plugin.
 </a>
 
 <a class="qt-card">
@@ -78,27 +77,13 @@ documentation — packaged so they work natively in Claude Code,
 Codex CLI, and Gemini CLI.
 </a>
 
-<a class="qt-card" href="mcp/">
-<strong>MCP Tools</strong>
-Model Context Protocol servers that give agents first-class
-access to Qt documentation across multiple Qt versions.
-</a>
-
 <a class="qt-card" href="contributing/">
 <strong>Contributing</strong>
 Packaging conventions and the cross-platform story for
-publishing a new skill or MCP server in this repo.
+publishing a new skill in this repo.
 </a>
 
 </div>
-
-## Part of Qt's AI-powered development tools { #qt-ai-tools }
-
-This site documents the skills and MCP servers that any AI agent
-can load. If you're working in Qt Creator, the commercial
-**Qt AI Assistant** is also available, integrated into the IDE.
-See [Qt's AI-powered development tools](https://www.qt.io/development/tools/ai-powered-development-tools)
-for the other Qt AI offerings.
 
 !!! warning "AI output requires review"
     These tools and skills depend on LLMs, which can make mistakes.

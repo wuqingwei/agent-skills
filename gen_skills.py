@@ -27,7 +27,7 @@ import mkdocs_gen_files
 import yaml
 
 SKILLS_ROOT = Path("skills")
-GITHUB_BLOB = "https://github.com/TheQtCompanyRnD/agent-skills/blob/main"
+GITHUB_BLOB = "https://github.com/wuqingwei/agent-skills/blob/main"
 
 FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n+", re.DOTALL)
 RELATIVE_LINK_RE = re.compile(

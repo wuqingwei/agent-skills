@@ -2,7 +2,7 @@
 # Copyright (C) 2026 The Qt Company Ltd.
 # SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 """
-qt_qml_lint.py -- Data-driven single-pass Qt6 QML linter.
+qt_qml_lint.py -- Data-driven single-pass Qt5 QML linter.
 
 Rules are defined as entries in typed tables (RULES_SIMPLE,
 RULES_CONTEXT, RULES_FLAG) processed by a generic dispatch loop.
@@ -42,9 +42,9 @@ Output: FILE:LINE RULE-ID MESSAGE (one per line)
         The summary then also lists the changed files and line counts.
         With --qmllint[=<path>]: also run qmllint (the given binary or
         bin directory, else $QT_HOST_PATH/bin, qmllint on PATH, the
-        qtpaths/qmake host bin directory, or the newest Qt 6 kit under
+        qtpaths/qmake host bin directory, or the newest Qt 5 kit under
         ~/Qt, C:/Qt or /opt/Qt) on the
-        same files and merge its warnings as rule `QL:<id>`; extra
+        same files and merge its warnings as rule `QL`; extra
         qmllint options (import paths) go in --qmllint-args. A missing
         qmllint is reported, not an error.
 Exit code: 0 if no findings, 1 if findings found, 2 on usage or git
@@ -65,6 +65,7 @@ Known limitations:
 
 from __future__ import annotations
 
+import glob
 import json
 import os
 import re
@@ -166,28 +167,7 @@ class ImportTracker:
         file_flags: "Dict[str, bool]",
         emit,
     ) -> None:
-        """Emit IMP-1, IMP-3, IMP-4 after the line-by-line scan."""
-        # IMP-1: Redundant QtQuick.Window
-        if file_flags["has_import_qtquick"]:
-            for j, ln in enumerate(lines):
-                if RE_IMP_QTQUICK_WINDOW.match(ln.strip()):
-                    emit(j + 1, "IMP-1",
-                         "import QtQuick.Window is redundant when "
-                         "QtQuick is imported (Qt 6)")
-                    break
-
-        # IMP-3: Plain Controls import with customization
-        if (file_flags["has_controls_plain"]
-                and file_flags["has_control_custom"]):
-            for j, ln in enumerate(lines):
-                if RE_IMP_CONTROLS_PLAIN.match(ln.strip()):
-                    emit(j + 1, "IMP-3",
-                         "import QtQuick.Controls without style qualifier "
-                         "-- use Controls.Basic (or specific style) when "
-                         "customizing contentItem/background/indicator/"
-                         "handle")
-                    break
-
+        """Emit IMP-4 after the line-by-line scan."""
         # IMP-4: Import ordering (Qt imports should come before third-party)
         if self.other_import_lines and self.qt_import_lines:
             first_other = min(self.other_import_lines)
@@ -317,14 +297,6 @@ class BlockTracker:
             # Ordering tracking (only for non-unknown categories)
             if cat != CAT_UNKNOWN:
                 current.categories.append((cat, lineno))
-
-            # STA-1: target: inside PropertyChanges
-            if (self.in_property_changes
-                    and RE_STA_TARGET_LINE.match(stripped)
-                    and self.brace_depth >= self.property_changes_depth):
-                emit(lineno, "STA-1",
-                     "PropertyChanges uses target: -- "
-                     "in Qt 6 use id.property: value syntax")
 
             # STA-4: imperative = inside PropertyChanges
             if (self.in_property_changes
@@ -495,44 +467,21 @@ RE_COMMENT_LINE = re.compile(r"^\s*(//|/?\*)")
 
 # --- IMP (Imports) ---
 
-# IMP-1: Redundant QtQuick.Window when QtQuick is imported (Qt 6)
-# Research: In Qt 6, Window types were folded into QtQuick module.
-# QtQuick.Window import is unnecessary overhead and confuses newcomers.
-RE_IMP_QTQUICK = re.compile(r'^\s*import\s+QtQuick(\s+\d[\d.]*)?$', re.M)
-RE_IMP_QTQUICK_WINDOW = re.compile(r'^\s*import\s+QtQuick\.Window\b')
-
-# IMP-2: Version numbers on imports (Qt 6 dropped the requirement).
-# Research: qmlsc requires unversioned imports for optimal compilation;
-# versioned imports cap API surface and cause "missing type" confusion
-# when copying Qt 5 examples.
-RE_IMP_VERSIONED = re.compile(r'^\s*import\s+\w[\w.]*\s+\d+\.\d+')
-
-# IMP-3: Plain QtQuick.Controls without style qualifier when customizing.
-# Research: Customizing contentItem/background/indicator/handle without a
-# style-specific import uses the "default style" abstraction, which can
-# produce unexpected rendering. Import Controls.Basic (or another style).
-RE_IMP_CONTROLS_PLAIN = re.compile(
-    r'^\s*import\s+QtQuick\.Controls(\s+\d[\d.]*)?\s*$', re.M
-)
-RE_CONTROL_CUSTOMIZATION = re.compile(
-    r'\b(contentItem|background|indicator|handle)\s*:'
+# IMP-2: Missing version numbers on imports.
+# Research: Qt 5 requires explicit major.minor versions on every module
+# import ("import QtQuick" alone fails to resolve). Versionless imports
+# are a Qt 6 relaxation that breaks at load time on Qt 5.
+RE_IMP_UNVERSIONED = re.compile(
+    r'^\s*import\s+(Qt[\w.]*)\s*(\s+as\s+\w+)?\s*$', re.M
 )
 
 # IMP-5: Qt.include() is deprecated since Qt 5.14.
-# Research: Removed in Qt 6 documentation; use explicit imports or
+# Research: Removed from the documentation; use explicit imports or
 # JS module imports instead.
 RE_IMP_QT_INCLUDE = re.compile(r'\bQt\.include\s*\(')
 
 # IMP-6: Duplicate import detection (post-scan)
 RE_IMPORT_LINE = re.compile(r'^\s*import\s+(.+)')
-
-# IMP-7: Qt 5 graphical effects module. QtGraphicalEffects does not exist
-# in Qt 6; Qt5Compat.GraphicalEffects is a migration bridge only.
-# Research: MultiEffect (QtQuick.Effects, Qt 6.5+) combines blur, shadow
-# and colorization in a single pass.
-RE_IMP_GRAPHICAL_EFFECTS = re.compile(
-    r'^\s*import\s+(QtGraphicalEffects|Qt5Compat\.GraphicalEffects)\b'
-)
 
 # --- BND (Bindings & Properties) ---
 
@@ -616,8 +565,8 @@ RE_LDR_SOURCE_COMPONENT = re.compile(r'^\s*sourceComponent\s*:')
 # DEL-1: Delegate using model.roleName without required property.
 # Research: Once any required property is declared, the implicit
 # model context object is no longer injected. But using model.*
-# without required properties misses qmlsc compilation and type
-# safety. Modern Qt 6 best practice is required properties.
+# without required properties misses type safety and tool support.
+# Modern best practice (Qt 5.15+) is required properties.
 RE_DEL_MODEL_ACCESS = re.compile(r'\bmodel\.\w+')
 RE_DEL_REQUIRED_PROP = re.compile(r'required\s+property\b')
 
@@ -642,11 +591,9 @@ RE_DEL_REUSE_ITEMS = re.compile(r'reuseItems\s*:\s*true')
 
 # --- STA (States & Transitions) ---
 
-# STA-1: PropertyChanges with target: property (Qt 6 deprecated form).
-# Research: Qt 6 uses id.property: value syntax inside PropertyChanges.
-# The old target: form still works but is not recommended and is
-# incompatible with Qt Design Studio.
-RE_STA_TARGET_LINE = re.compile(r'^\s*target\s*:')
+# STA-1: (retired for Qt 5) PropertyChanges target: is the correct form
+# in Qt 5; the id.property syntax is a Qt 6 relaxation. PropertyChanges
+# tracking is still used by STA-4 below.
 
 # STA-2: Transition without from/to (catch-all).
 # Research: Transition{from:"*";to:"*"} fires on every state change
@@ -756,7 +703,7 @@ RE_STY_CAMELCASE = re.compile(r'^[a-z][a-zA-Z0-9]*$')
 RE_SIG_CONNECTIONS = re.compile(r'Connections\s*\{')
 
 # SIG-2: Old onFoo: handler syntax in Connections block (deprecated 5.15).
-# Research: The old syntax produces deprecation warnings in Qt 6.
+# Research: The old syntax produces deprecation warnings since Qt 5.15.
 # Worse: mixing old onFoo: with new function onFoo() in the same
 # Connections block silently ignores the function-based handlers.
 RE_SIG_OLD_HANDLER = re.compile(r'^\s*on[A-Z]\w*\s*:')
@@ -810,18 +757,16 @@ RE_JS_EVAL = re.compile(r'\beval\s*\(')
 # Tier A: Simple match + optional exclude.
 RULES_SIMPLE: "List[Rule]" = [
     # --- IMP ---
-    Rule("IMP-2", RE_IMP_VERSIONED,
-         "Versioned import -- Qt 6 does not require version numbers on imports"),
+    Rule("IMP-2", RE_IMP_UNVERSIONED,
+         "Unversioned import -- Qt 5 requires explicit version numbers "
+         "(e.g. import QtQuick 2.15)"),
     Rule("IMP-5", RE_IMP_QT_INCLUDE,
          "Qt.include() is deprecated -- use ES module imports or explicit QML imports"),
-    Rule("IMP-7", RE_IMP_GRAPHICAL_EFFECTS,
-         "Qt 5 graphical effects import -- migrate to MultiEffect "
-         "(import QtQuick.Effects, Qt 6.5+)"),
 
     # --- BND ---
     Rule("BND-1", RE_BND_PROP_VAR,
          "property var -- use a typed property (int, string, etc.) for "
-         "qmlsc compilation and type safety"),
+         "type safety and cheaper property access"),
     Rule("BND-3", RE_BND_BINDING_OLDFUNC,
          "Qt.binding(function(){}) -- use arrow function: Qt.binding(() => expr)"),
     Rule("BND-5", RE_BND_LIST_PROP,
@@ -897,7 +842,7 @@ RULES_FLAG: "List[Rule]" = [
     # DEL-1: model. access without required property
     Rule("DEL-1", RE_DEL_MODEL_ACCESS,
          "model.roleName without required property -- "
-         "declare required properties for type safety and qmlsc compilation",
+         "declare required properties for type safety (Qt 5.15+)",
          requires_no_flag="has_required_prop"),
 
     # PRF-2: opacity: 0 without animation context
@@ -1164,9 +1109,6 @@ def scan_file(filepath: str) -> "List[Finding]":
     file_flags: "Dict[str, bool]" = {
         "has_required_prop":     bool(RE_DEL_REQUIRED_PROP.search(code_text)),
         "has_reuse_items":       bool(RE_DEL_REUSE_ITEMS.search(code_text)),
-        "has_import_qtquick":    bool(RE_IMP_QTQUICK.search(code_text)),
-        "has_controls_plain":    bool(RE_IMP_CONTROLS_PLAIN.search(code_text)),
-        "has_control_custom":    bool(RE_CONTROL_CUSTOMIZATION.search(code_text)),
         "has_opacity_anim":      bool(RE_PRF_OPACITY_ANIM.search(code_text)),
     }
 
@@ -1491,7 +1433,7 @@ def changed_lines(diff_args: "List[str]") -> "Tuple[str, Dict[str, Set[int]]]":
 
 
 QMLLINT_HINT = ("pass --qmllint=<Qt dir>/<version>/<kit>/bin, "
-                "e.g. ~/Qt/6.8.0/gcc_64/bin or C:\\Qt\\6.8.0\\msvc2022_64\\bin")
+                "e.g. ~/Qt/5.15.2/gcc_64/bin or C:\\Qt\\5.15.2\\msvc2019_64\\bin")
 
 
 def qmllint_in(directory: str) -> "Optional[str]":
@@ -1504,8 +1446,7 @@ def qmllint_in(directory: str) -> "Optional[str]":
 def qt_host_bins() -> "List[str]":
     """Host bin directories reported by qtpaths or qmake on PATH."""
     dirs: "List[str]" = []
-    for tool, flag in (("qtpaths6", "--query"), ("qtpaths", "--query"),
-                       ("qmake6", "-query"), ("qmake", "-query")):
+    for tool, flag in (("qtpaths", "--query"), ("qmake", "-query")):
         exe = shutil.which(tool)
         if not exe:
             continue
@@ -1522,18 +1463,22 @@ def qt_host_bins() -> "List[str]":
 
 
 def qt_installer_bins() -> "List[str]":
-    """Bin directories of Qt 6 kits installed by the Qt online
+    """Bin directories of Qt 5 kits installed by the Qt online
     installer (<root>/<version>/<kit>/bin), newest version first.
-    Default roots: ~/Qt on Linux and macOS, C:\\Qt on Windows, /opt/Qt."""
-    roots = [os.path.join(os.path.expanduser("~"), "Qt"), "/opt/Qt"]
+    Qt 5 installer roots may be either <root>/Qt/ or per-version
+    <root>/Qt5.15.2/ directories; both are searched.
+    Default roots: ~/Qt* on Linux and macOS, C:\\Qt* on Windows, /opt/Qt*."""
+    roots = sorted(glob.glob(os.path.join(os.path.expanduser("~"), "Qt*")))
+    roots.append("/opt/Qt")
     if os.name == "nt":
-        roots.append(os.environ.get("SystemDrive", "C:") + "\\Qt")
+        sysdrive = os.environ.get("SystemDrive", "C:")
+        roots.extend(sorted(glob.glob(sysdrive + "\\Qt*")))
     found: "List[Tuple[Tuple[int, int], str]]" = []
     for root in roots:
         if not os.path.isdir(root):
             continue
         for version in os.listdir(root):
-            match = re.fullmatch(r"6\.(\d+)\.(\d+)", version)
+            match = re.fullmatch(r"5\.(\d+)\.(\d+)", version)
             if not match:
                 continue
             version_dir = os.path.join(root, version)
@@ -1549,7 +1494,7 @@ def qt_installer_bins() -> "List[str]":
 def find_qmllint(explicit: str) -> "Optional[str]":
     """Resolve the qmllint binary, in this order: an explicit binary or
     bin directory, $QT_HOST_PATH/bin, qmllint on PATH, the host bin
-    directory from qtpaths or qmake, then the newest Qt 6 kit from the
+    directory from qtpaths or qmake, then the newest Qt 5 kit from the
     Qt online installer."""
     if explicit:
         return qmllint_in(explicit) or shutil.which(explicit)
@@ -1569,20 +1514,43 @@ def find_qmllint(explicit: str) -> "Optional[str]":
 def run_qmllint(qmllint: str, extra_args: "List[str]",
                 files: "List[str]") -> "List[Finding]":
     """Run qmllint on files and return its warnings as findings with
-    rule `QL:<warning id>`. File-level warnings get line 0."""
-    proc = subprocess.run([qmllint, "--json", "-", *extra_args, *files],
+    rule `QL`. File-level warnings get line 0.
+
+    The Qt 5 qmllint is a plain syntax checker: it prints human-readable
+    warnings (no --json, no warning ids), so the output is parsed
+    line-wise. Lines that do not match the location pattern are attached
+    as one file-level finding so nothing the tool reported is lost."""
+    proc = subprocess.run([qmllint, *extra_args, *files],
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                           universal_newlines=True)
-    report = json.loads(proc.stdout)
+    output = "\n".join(part for part in (proc.stdout, proc.stderr) if part)
     by_abs = {os.path.abspath(f): f for f in files}
     findings: "List[Finding]" = []
-    for entry in report.get("files", []):
-        name = entry.get("filename", "")
+    unmatched: "List[str]" = []
+    # Location lines look like:
+    #   Warning: Main.qml:12: Some message
+    #   Main.qml:12: Some message
+    #   Main.qml:12 : Some message
+    re_line = re.compile(
+        r"^\s*(?:Warning|Error)\s*:\s*"
+        r"(.+?):\s*(\d+)\s*:?\s*(.*)$"
+    )
+    for raw in output.splitlines():
+        if not raw.strip():
+            continue
+        m = re_line.match(raw)
+        if not m:
+            unmatched.append(raw)
+            continue
+        name = m.group(1).strip()
         name = by_abs.get(os.path.abspath(name), name)
-        for w in entry.get("warnings", []):
-            findings.append(Finding(name, int(w.get("line", 0)),
-                                    "QL:" + w.get("id", w.get("type", "?")),
-                                    w.get("message", "").rstrip(":")))
+        findings.append(Finding(name, int(m.group(2)), "QL",
+                                m.group(3).strip()))
+    if unmatched:
+        summary = "; ".join(u.strip() for u in unmatched[:5])
+        fallback = files[0] if files else ""
+        findings.append(Finding(by_abs.get(os.path.abspath(fallback), fallback),
+                                0, "QL", "qmllint reported: " + summary))
     return findings
 
 

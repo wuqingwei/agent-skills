@@ -1,4 +1,4 @@
-# Qt Quick Test — CMake wiring recipe
+# Qt Quick Test — CMake wiring recipe (Qt 5)
 
 The recipe the skill writes when a project has no test
 infrastructure, plus the detection rules and common failure
@@ -12,24 +12,24 @@ explicit OK.
 
 ## tests/CMakeLists.txt — `QUICK_TEST_MAIN` harness
 
-The skill uses the C++ harness for all CMake projects. It
-works whether the project ships its own QML module via
-`qt_add_qml_module` or not, so a separate "direct mode" is not
+The skill uses the C++ harness for all CMake projects. It works
+whether the project registers its own QML types via
+`qmlRegisterType` or not, so a separate "direct mode" is not
 needed.
 
 Two variants are emitted depending on the project's modules.
 **Pick the Widgets variant** if any of the following matches in
-the project's root `CMakeLists.txt` `find_package(Qt6 ...
+the project's root `CMakeLists.txt` `find_package(Qt5 ...
 COMPONENTS …)` list, or in any `target_link_libraries` for
 project targets:
 
-- `Widgets` / `Qt6::Widgets`
-- `Charts` / `Qt6::Charts` — QtCharts privately links Widgets
-  and spawns `QWidgetTextControl` internally; without a
-  `QApplication` the test binary segfaults at first chart draw.
-- `WebEngineWidgets`, `WebEngineQuick` — same reason.
+- `Widgets` / `Qt5::Widgets`
+- `Charts` / `Qt5::Charts` — QtCharts privately links Widgets
+  and spawns widget internals; without a `QApplication` the
+  test binary segfaults at first chart draw.
+- `WebEngineWidgets` — same reason.
 - `Multimedia` (when paired with widgets-based renderers).
-- `PrintSupport`, `Pdf`, `PdfWidgets`.
+- `PrintSupport`.
 
 Otherwise emit the **GuiApplication variant**.
 
@@ -38,18 +38,19 @@ Otherwise emit the **GuiApplication variant**.
 `tests/CMakeLists.txt`:
 
 ```cmake
-qt_add_executable(tst_qmltests main.cpp)
+set(CMAKE_AUTOMOC ON)
+
+add_executable(tst_qmltests main.cpp)
 
 target_compile_definitions(tst_qmltests PRIVATE
     QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 target_link_libraries(tst_qmltests PRIVATE
-    Qt6::Gui
-    Qt6::QuickTest
-    # Add the project's backing module library here, e.g.:
-    # MyAppLib
-    # ${PROJECT_NAME}plugin
+    Qt5::Gui
+    Qt5::QuickTest
+    # Add the project's own QML-registering library here, e.g.:
+    # MyAppCore
 )
 
 add_test(NAME tst_qmltests COMMAND tst_qmltests)
@@ -86,13 +87,13 @@ QUICK_TEST_MAIN_WITH_SETUP(qmltests, Setup)
 
 Differs from the GuiApplication variant in two places:
 
-1. `tests/CMakeLists.txt` links `Qt6::Widgets`:
+1. `tests/CMakeLists.txt` links `Qt5::Widgets`:
 
    ```cmake
    target_link_libraries(tst_qmltests PRIVATE
-       Qt6::Gui
-       Qt6::Widgets
-       Qt6::QuickTest
+       Qt5::Gui
+       Qt5::Widgets
+       Qt5::QuickTest
        # …project libraries…
    )
    ```
@@ -131,7 +132,7 @@ Differs from the GuiApplication variant in two places:
    ```
 
 When emitting the Widgets variant, also add `Widgets` to the
-project's root `find_package(Qt6 ... COMPONENTS …)` list at
+project's root `find_package(Qt5 ... COMPONENTS …)` list at
 Step 5c if it is not already present.
 
 ### Both variants
@@ -149,13 +150,13 @@ to initialize QSettings instance" at construction.
 binary, so moving the test files later requires a re-configure.
 
 The commented `target_link_libraries` lines must be filled in
-by the project owner **if the project has a backing C++/QML
-module library** (anything declared via `qt_add_qml_module`
-that tests need to instantiate). The skill cannot reliably
-guess the backing-library target name; it surfaces this gap in
-the console output and the run report. Projects without a
-backing library can leave those lines commented and rely on
-Qt-shipped QML modules only.
+by the project owner **if the project ships a C++ library that
+registers the QML types under test** (anything calling
+`qmlRegisterType` that tests need to instantiate). The skill
+cannot reliably guess the library target name; it surfaces this
+gap in the console output and the run report. Projects that
+only exercise Qt-shipped QML modules can leave those lines
+commented.
 
 To run via the test executable instead of CTest:
 
@@ -172,12 +173,12 @@ The skill never silently mutates the root file. With
 `--wire-up`, it prints these three lines for confirmation:
 
 ```cmake
-find_package(Qt6 REQUIRED COMPONENTS QuickTest)
+find_package(Qt5 5.15 REQUIRED COMPONENTS QuickTest)
 enable_testing()
 add_subdirectory(tests)
 ```
 
-Add after any existing `find_package(Qt6 ...)` call, or merge
+Add after any existing `find_package(Qt5 ...)` call, or merge
 the `QuickTest` component into the existing call's `COMPONENTS`
 list. The `add_subdirectory(tests)` line goes near the bottom,
 after the project's main targets are defined.
@@ -190,13 +191,12 @@ infrastructure, apply the following sub-steps in order:
 **5a — Write `tests/CMakeLists.txt`.** Pick the variant per
 the GuiApplication vs Widgets criteria above and write the
 matching template. Auto-fill the `target_link_libraries`
-project-plugin lines per the next section; leave the
-commented placeholder only when no library-backed
-`qt_add_qml_module` calls are found. Create the `tests/`
-directory if missing. **Never overwrite** an existing
-`tests/CMakeLists.txt` — if the file is already there,
-surface its content and stop with a "merge manually"
-message.
+project-library line per the next section; leave the
+commented placeholder only when no QML-registering library is
+found. Create the `tests/` directory if missing. **Never
+overwrite** an existing `tests/CMakeLists.txt` — if the file
+is already there, surface its content and stop with a "merge
+manually" message.
 
 **5b — Write `tests/main.cpp`.** Use the template matching
 the variant chosen at 5a. Both variants use
@@ -253,7 +253,7 @@ infrastructure as present and skip wiring.
 
 | Pattern (regex) | What it indicates |
 |---|---|
-| `find_package\([^)]*QuickTest` | `Qt6::QuickTest` is available |
+| `find_package\([^)]*QuickTest` | `Qt5::QuickTest` is available |
 | `quick_test_main\b` or `QUICK_TEST_MAIN` | C++ harness present |
 | `QUICK_TEST_SOURCE_DIR` | Test source directory configured |
 
@@ -263,177 +263,49 @@ C++ QTest-only project. Generic CTest signals like
 for detection because a C++ QTest project sets both without
 involving QML Quick Test.
 
-Avoid matching `qt_internal_add_test` — that macro is **Qt
-internal API** (private to Qt itself); user projects should
-not use it. Its presence usually means the project is a Qt
-module, not a typical user codebase, and the skill should
-defer to the existing setup.
+### Additional detection — how the project exposes its QML types
 
-### Additional detection — backing target type
+Separately from the wiring-already-present check, determine how
+the tests can reach the project's own QML components:
 
-Separately from the wiring-already-present check, grep for
-`qt_add_qml_module(<target>` and pair `<target>` with its
-declaration:
+- **`qmlRegisterType`/`qmlRegisterSingletonType` in a linked
+  library** — tests link that library target and import the
+  registered URI with its version. Fill the
+  `target_link_libraries` placeholder with the library target
+  name.
+- **QML files listed in a `.qrc` that only the app links** —
+  the test binary cannot load those resource URLs (the qrc
+  lives in the app binary). Tests must import the sources via
+  a relative directory import (`import "../src"`) against the
+  on-disk files, or the project must expose the types through
+  a registration in a library the test links.
+- **`qmldir` module directories on disk** — tests can import
+  them with the module's version; add
+  `-import <parent-dir>` to the run invocation, or call
+  `engine.addImportPath(...)` in `qmlEngineAvailable()`.
 
-- `qt_add_executable(<target> ...)` — module is built into the
-  executable; **no linkable plugin exists** for tests to use.
-  See "Module-on-executable refactor" below.
-- `qt_add_library(<target> ... STATIC ...)` or
-  `add_library(<target> STATIC ...)` — module backs a static
-  library; the auto-generated `<target>plugin` is also static.
-  **Direct `qmltestrunner` cannot load these modules**: at
-  runtime it tries to `dlopen` the plugin, but a static plugin
-  has nothing to load and the import fails with `module "<URI>"
-  is not installed`. A custom test executable that links the
-  static plugin target is the only working path. The skill must
-  therefore skip the direct-mode offer for any test that uses
-  `import <URI>` against a STATIC-backed module and route
-  straight to Step 5 wire-up.
-- `qt_add_library(<target> ... SHARED ...)` or unqualified
-  `qt_add_library(<target> ...)` resolving to the default
-  `BUILD_SHARED_LIBS` value — module backs a shared library; the
-  auto-generated `<target>plugin` is loadable via `qmltestrunner
-  -import <plugin-dir>`, but the test executable can also link
-  it directly for less environmental setup.
-
-This pairing only matters when the test is expected to use
-`import <URI>` to reach the project's own QML types. If the
-test only exercises Qt-shipped modules (`QtQuick.Controls`,
-`Qt.labs.*`, etc.), no backing library is needed.
-
-### Auto-filling project plugin links
-
-When the project has one or more `qt_add_qml_module(<lib>
-...)` calls backed by libraries, the skill should not leave the
-`target_link_libraries` lines commented — it can enumerate every
-such target from the project's CMakeLists.txt files and emit
-both `<lib>` and `<lib>plugin` for each, e.g.:
-
-```cmake
-target_link_libraries(tst_qmltests PRIVATE
-    Qt6::Gui
-    Qt6::QuickTest
-    AppCore
-    AppCoreplugin
-    AppWidgets
-    AppWidgetsplugin
-)
-```
-
-Leave the commented placeholder only when no
-`qt_add_qml_module` libraries were found.
-
-## Module-on-executable failure modes
-
-When `qt_add_qml_module(<exe> URI ...)` is called on a
-`qt_add_executable` target, no separate plugin is generated
-and three downstream failures appear in test wiring:
-
-1. **Linking a guessed `<exe-target>plugin`** — the target
-   does not exist; the linker reports "cannot find
-   -l<name>plugin".
-2. **Falling back to `qmltestrunner -import <build-dir>`** —
-   the auto-generated `build/<module>/qmldir` contains
-   `prefer :/`, directing Qt to load module files from qrc.
-   Those qrc copies live only inside the original executable,
-   not the test binary; loads fail with "Type X unavailable:
-   No such file or directory".
-3. **Editing `prefer :/` out of the generated qmldir** — page
-   files that reference sibling types (e.g. a `ButtonPage`
-   inheriting `ScrollablePage`) by bare name still fail to
-   resolve, because sibling-type resolution within a module
-   relies on the module being registered in the *linking*
-   binary, not located via on-disk qmldir from a sibling
-   process.
-
-The fix for all three is the same refactor below.
-
-## Module-on-executable refactor
-
-When the project declares `qt_add_qml_module(<exe> URI ...)`
-with `<exe>` being a `qt_add_executable` target, no separate
-plugin library is generated. The module registration is baked
-into the executable. A test binary cannot link to this — there
-is nothing to link to.
-
-The fix is to split the QML module out of the executable into
-a `STATIC` library that both the original executable and the
-test binary link against.
-
-**Before** (typical example layout):
-
-```cmake
-qt_add_executable(myapp main.cpp)
-
-qt_add_qml_module(myapp
-    URI MyApp
-    NO_RESOURCE_TARGET_PATH      # only valid on executables
-    QML_FILES Main.qml SubPage.qml
-    RESOURCES icons/logo.png
-)
-
-target_link_libraries(myapp PUBLIC Qt6::Core Qt6::Quick)
-```
-
-**After**:
-
-```cmake
-qt_add_executable(myapp main.cpp)
-
-qt_add_library(myappmodule STATIC)
-
-qt_add_qml_module(myappmodule
-    URI MyApp
-    # NO_RESOURCE_TARGET_PATH removed — only valid on executables
-    QML_FILES Main.qml SubPage.qml
-    RESOURCES icons/logo.png
-)
-
-target_link_libraries(myappmodule PUBLIC Qt6::Core Qt6::Quick)
-
-target_link_libraries(myapp PRIVATE
-    myappmodule
-    myappmoduleplugin           # auto-generated by qt_add_qml_module
-)
-```
-
-In `tests/CMakeLists.txt`, link the same pair:
-
-```cmake
-target_link_libraries(tst_qmltests PRIVATE
-    Qt6::Gui
-    Qt6::QuickTest
-    myappmodule
-    myappmoduleplugin
-)
-```
-
-Notes:
-
-- `NO_RESOURCE_TARGET_PATH` is only valid when the backing
-  target is an executable; remove it (or replace with
-  `RESOURCE_PREFIX "/"`) when moving to a library.
-- Singleton declarations (`set_source_files_properties(...
-  QT_QML_SINGLETON_TYPE TRUE)`) must be set *before* the
-  `qt_add_qml_module` call and now apply to the library
-  target's sources.
-- The auto-generated plugin name is `<library-target>plugin`.
-  If the library is `myappmodule`, the plugin is `myappmoduleplugin`.
+This only matters when the test is expected to reach the
+project's own QML types. If the test only exercises Qt-shipped
+modules (`QtQuick.Controls`, `Qt.labs.*`, etc.), no project
+library is needed.
 
 ## Common failure modes after wiring
 
-- **`find_package(Qt6 ... QuickTest)` missing** — `qt_add_executable`
-  succeeds but `target_link_libraries(... Qt6::QuickTest)`
-  fails with "Target Qt6::QuickTest not found". Fix: add
-  `QuickTest` to the root `find_package` components list.
+- **`find_package(Qt5 ... QuickTest)` missing** — `add_executable`
+  succeeds but `target_link_libraries(... Qt5::QuickTest)`
+  fails with "Target Qt5::QuickTest not found". Fix: add
+  `QuickTest` to the root `find_package` components list
+  (it lives in the `qtquick1`-independent `QtQuickTest` config;
+  on some distro packages it is a separate `qtquick1`/`qtdeclarative`
+  subpackage — install `qtdeclarative5-dev` or the matching
+  QuickTest development package).
 - **`main.moc: No such file or directory`** at compile time —
   the test binary's `main.cpp` declares `class Setup : public
   QObject { Q_OBJECT … };` and ends with `#include "main.moc"`,
   which requires AUTOMOC to generate the `.moc` file.
-  `qt_add_executable` does not enable AUTOMOC on its own.
-  Fix: ensure the project's root `CMakeLists.txt` calls
-  `qt_standard_project_setup()` (it turns AUTOMOC on for the
-  project), or add `set(CMAKE_AUTOMOC ON)` at the root, or
+  Qt 5 has no helper that enables AUTOMOC for you.
+  Fix: ensure the project's root `CMakeLists.txt` sets
+  `set(CMAKE_AUTOMOC ON)`, or
   `set_target_properties(tst_qmltests PROPERTIES AUTOMOC ON)`
   on the test target.
 - **`enable_testing()` missing** — `add_test` calls are silently
@@ -446,30 +318,18 @@ Notes:
   `${CMAKE_CURRENT_SOURCE_DIR}`, which is the directory
   containing the generated `tests/CMakeLists.txt`. Move
   `tst_*.qml` files into that directory or update the macro.
-- **Custom QML module not found at runtime** — the test fails
-  with "module not installed" because the test binary is not
-  linked against the project's backing library. Fix: uncomment
-  and edit the project's backing library target name in
-  `target_link_libraries` (e.g. `MyAppLib`).
-- **`cannot find -l<name>plugin`** at link time — the named
-  plugin target does not exist. Most often because
-  `qt_add_qml_module` was called on an executable (no plugin
-  is generated in that case). See the "Module-on-executable
-  refactor" section above.
-- **`"Type X unavailable"` / `"No such file or directory"`
-  pointing at `qrc:/...` paths**, even though the QML files
-  exist on disk — the auto-generated `build/<module>/qmldir`
-  contains `prefer :/`. The qrc copies live in the original
-  executable, not the test binary, so resolution fails. The
-  cure is the refactor above, not editing the qmldir (which
-  is regenerated every configure).
-- **`"<SiblingType> is not a type"`** when loading a file that
+- **`module "<URI>" is not installed` at runtime** — the test
+  imports a project URI the test binary does not know. Fix:
+  link the project library that performs the `qmlRegisterType`
+  calls (edit the commented `target_link_libraries` line), or
+  add `-import <dir>` so the engine finds the on-disk `qmldir`.
+- **`"<Type> is not a type"`** when loading a file that
   references a same-module sibling without an explicit import —
-  same root cause as the previous bullet. Sibling-type
-  resolution within a QML module requires the module to be
-  registered in the *linking* binary. Loaded via on-disk qmldir
-  from a sibling process, this resolution does not fire
-  reliably.
+  add the missing relative import path (`-import`) or import
+  the module explicitly in the test file.
+- **GL/platform errors in CI** — prepend
+  `QT_QPA_PLATFORM=offscreen` to the test invocation (see the
+  runner skill, Step 7).
 
 ## Why this is "starter" wiring
 

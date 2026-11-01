@@ -14,9 +14,9 @@ compatibility: >-
 disable-model-invocation: false
 argument-hint: "[--profile <full|rendering|logic|memory>] -- <executable> [app-args...] | <trace.qtd>"
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.1"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: tool
 ---
 
@@ -27,19 +27,14 @@ Profile a QML application and analyze performance bottlenecks.
 ## Scope
 
 This skill targets **2D QML / Qt Quick** applications. Qt Quick 3D
-(`quick3d` qmlprofiler feature — `Quick3DRenderFrame`, `Quick3DSync`,
-`Quick3DCullInstances`, etc.) is **not supported**: those events are not
+events (`Quick3D*` feature types, present only in the Qt 5.15
+tech-preview build of the module) are **not supported**: they are not
 extracted from the trace, not summarized in the report, and the
 anti-pattern reference in
 [qml-performance-anti-patterns.md](references/qml-performance-anti-patterns.md)
-does not cover 3D-specific optimizations (mesh batching, material
-costs, shader variants, render passes).
-
-If the profiled app uses Qt Quick 3D, 2D results are still valid but any
-3D bottlenecks will be invisible in the output — inform the user and
-recommend using Qt Creator's profiler UI or a dedicated 3D profiler for
-those. The parser emits `quick3d_events_dropped` when a trace holds both
-2D and 3D events, and errors when it holds only 3D.
+does not cover 3D-specific optimizations. Standard Qt 5 applications
+contain no 3D events at all; the parser only reports
+`quick3d_events_dropped` as a safety guard.
 
 ## Guardrails
 
@@ -84,22 +79,22 @@ compiler subdirectory name, the binary suffix, and the PATH lookup command:
 |---|---|---|---|
 | Linux | `gcc_64` | *(none)* | `which` |
 | macOS | `macos` | *(none)* | `which` |
-| Windows | `msvc2022_64`, `msvc2019_64`, `mingw_64` | `.exe` | `where` |
+| Windows | `msvc2019_64`, `mingw81_64` | `.exe` | `where` |
 
 Find the qmlprofiler executable. Try these sources in order and use the
 first one that has `bin/qmlprofiler` (or `bin\qmlprofiler.exe` on Windows):
 
 1. **CLAUDE.md** — look for a `CMAKE_PREFIX_PATH` or explicit Qt path.
-2. **Environment** — check `$CMAKE_PREFIX_PATH`, `$QTDIR`, `$Qt6_DIR`
+2. **Environment** — check `$CMAKE_PREFIX_PATH`, `$QTDIR`, `$Qt5_DIR`
    (`%CMAKE_PREFIX_PATH%` etc. on Windows).
 3. **PATH** — run `which qmlprofiler` (Linux/macOS) or
    `where qmlprofiler` (Windows).
 4. **Common locations** — glob the list matching the detected OS:
-   - **Linux**: `/home/*/Qt/6.*/gcc_64`, `/opt/Qt/6.*/gcc_64`,
-     `/usr/lib/qt6`
-   - **macOS**: `/Users/*/Qt/6.*/macos`, `/Applications/Qt/6.*/macos`
-   - **Windows**: `C:\Qt\6.*\msvc*_64`, `C:\Qt\6.*\mingw_64`,
-     `%USERPROFILE%\Qt\6.*\msvc*_64`
+   - **Linux**: `/home/*/Qt5.*/5.*/gcc_64`, `/opt/Qt/5.*/gcc_64`,
+     `/usr/lib/qt5`
+   - **macOS**: `/Users/*/Qt5.*/5.*/clang_64`, `/opt/Qt/5.*/clang_64`
+   - **Windows**: `C:\Qt\5.*\msvc*_64`, `C:\Qt\5.*\mingw81_64`,
+     `%USERPROFILE%\Qt5.*\5.*\msvc*_64`
 
 If none of these yield a working qmlprofiler, ask the user for the Qt
 installation path.
@@ -292,7 +287,8 @@ Do not proceed to Step 5 with an empty or partial parser result.
 From the parser JSON output, take the top 5 hotspots. For each hotspot:
 
 1. **Map the filename to a local source file.** The trace uses
-   `qrc:/qt/qml/<Module>/qml/File.qml` paths. Strip the `qrc:` prefix and
+   `qrc:/<prefix>/<File>.qml` paths (matching the project's `.qrc`
+   entries). Strip the `qrc:` prefix and
    search the project for the matching QML file. Ignore hotspots in Qt
    internal files (`qrc:/qt-project.org/`).
 

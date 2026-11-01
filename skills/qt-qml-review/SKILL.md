@@ -2,26 +2,26 @@
 name: qt-qml-review
 description: >-
   Invoke when the user asks to review, check, audit, or look
-  over Qt6 QML code -- or suggest before committing. Runs
-  deterministic linting (48+ rules) then deep-analysis agents
+  over Qt5 QML code -- or suggest before committing. Runs
+  deterministic linting (45+ rules) then deep-analysis agents
   (scaled to the size of the change) covering
   bindings, layout, loaders, delegates, states, and performance.
-  Optionally invokes system qmllint for type-level checks.
+  Optionally invokes system qmllint for syntax-level checks.
   Reports only high-confidence issues (>80/100) with structured
   mitigations. Read-only -- never modifies code.
 license: LicenseRef-Qt-Commercial OR BSD-3-Clause
 compatibility: Designed for Claude Code, GitHub Copilot, and similar agents.
 disable-model-invocation: false
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "2.0"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: review
 ---
 
 # Qt QML Code Review
 
-Read-only review of Qt6 QML code: a deterministic Python linter (with
+Read-only review of Qt5 QML code: a deterministic Python linter (with
 qmllint folded in when available) first, then agent-driven deep
 analysis across seven rule domains, then one consolidated report.
 Suggest it before the user commits QML code.
@@ -49,7 +49,7 @@ These rules exist to keep the review cheap. Follow them.
    checklist is for humans.
 2. **Pass lint results in `--summary` form** (grouped by rule, paths
    relative to a root printed once), never the raw per-line listing
-   or qmllint's JSON.
+   or qmllint's output.
 3. **Point agents at content, never paste it.** Every token you write
    into a prompt is output on the orchestrating model, the most
    expensive tokens in the review. Prompts carry paths, commands and
@@ -87,20 +87,20 @@ second-guess its output. Rule families: IMP, ORD, BND, LAY, LDR, DEL,
 STA, IMG, PRF, STY, SIG, ERR, JS (48+ checks). Exit code 1 simply
 means findings exist; 2 means a usage or git error.
 
-`--qmllint` also runs qmllint and merges its warnings as `QL:<id>`
-rows; add `--qmllint-args="-I <dir>"` for a build directory with QML
-modules. The linter looks in `$QT_HOST_PATH/bin`, on PATH, in the
-host bin directory reported by `qtpaths` or `qmake`, and in the
-newest Qt 6 kit of a Qt online installer under `~/Qt`, `C:\Qt` or
-`/opt/Qt` (`<version>/<kit>/bin`, kits such as `gcc_64`, `macos`,
-`msvc2022_64`, `mingw_64`). If it reports `not available` but Qt is
+`--qmllint` also runs qmllint and merges its warnings as `QL` rows;
+add `--qmllint-args="-I <dir>"` for extra import paths. The Qt 5
+qmllint is a syntax-level checker (no semantic type analysis). The
+linter looks in `$QT_HOST_PATH/bin`, on PATH, in the host bin
+directory reported by `qtpaths` or `qmake`, and in the
+newest Qt 5 kit of a Qt online installer under `~/Qt*`, `C:\Qt*` or
+`/opt/Qt` (`<version>/<kit>/bin`, kits such as `gcc_64`, `clang_64`,
+`msvc2019_64`, `mingw81_64`). If it reports `not available` but Qt is
 installed elsewhere (a custom installer path, or `CMAKE_PREFIX_PATH`
 in the project's `CMakeCache.txt`), rerun once with
 `--qmllint=<that kit>/bin`; it accepts the binary or its bin
 directory. Do not search further. Copy the printed `qmllint:` status
-into the report header. qmllint is authoritative for
-type-level issues, the Python linter for style, ordering and
-performance patterns.
+into the report header. The Python linter carries the style,
+ordering and performance rules; qmllint adds syntax-level checks.
 
 ### Phase 2: Deep analysis (inline, or one agent per shard)
 
@@ -208,7 +208,7 @@ block, copied verbatim from the agents.
 
 | Rule | Count | Locations | Mitigation |
 |---|---|---|---|
-| IMP-2 Versioned import | 3 | `Main.qml:1,2`, `Panel.qml:1` | Drop the version numbers. |
+| IMP-2 Unversioned import | 3 | `Main.qml:1,2`, `Panel.qml:1` | Add the version numbers (e.g. `import QtQuick 2.15`). |
 | ... | | | |
 
 ---
