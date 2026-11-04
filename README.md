@@ -296,7 +296,7 @@ using [MkDocs Material](https://squidfunk.github.io/mkdocs-material/).
 
 ### Local preview
 
-Requires Python 3.12+:
+Requires Python 3.10+ (tested with 3.10):
 
 ```bash
 pip install -r requirements-docs.txt

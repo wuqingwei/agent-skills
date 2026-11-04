@@ -291,8 +291,9 @@ C++ 建议，Qt5 亦成立，保留。TMO-1 的 `QDeadlineTimer` 为 Qt 5.8+，�
    靠 Python linter + 深度分析 agent 兜底。
 3. **figma assets 中的项目占位 URI**：`import Qt.Fonts as Fonts`、`import Qt.Themes as Themes`
    为演示工程自有模块占位，实际接入需替换为项目注册的 URI+版本。
-4. **docs 站点**：MkDocs 导航已更新，`mkdocs serve/build --strict` 未在本环境跑过
-   （缺 Python 依赖），发布前建议本地验证一次。
+4. **docs 站点**：`mkdocs build --strict` 已于 2026-11-04 实测通过（Python 3.10.12 +
+   `requirements-docs.txt` 全部依赖，构建 2.3s、零警告零断链）；`mkdocs serve` 供本地
+   预览，未逐页人工检查渲染效果。
 5. **上游同步**：上游仍以 Qt6 为主演进；合并上游提交时，Qt6 相关改动需要人工评审后再带入。
 6. **许可与品牌**：保留上游 BSD-3-Clause 与 The Qt Company 版权头；Qt 商业许可条款提示语未动。
 
@@ -380,7 +381,12 @@ cp agents/cpp-review-agent.md agents/qml-review-agent.md ~/.claude/agents/
 
 ### 14.4 遗留说明（未改动，已知即可）
 
-- `mkdocs build --strict` 仍未能本地验证（环境缺 Python 依赖），发布文档站前建议跑一次。
+- ~~`mkdocs build --strict` 未能本地验证~~ —— 已于 2026-11-04 补验通过：Python 3.10.12
+  下安装 `requirements-docs.txt`（mkdocs 1.6.1 + material + gen-files 0.5.0 +
+  literate-nav 0.6.1 + pyyaml），`--strict` 构建成功（2.3s、零警告），产物含全部
+  12 个 skill 页面、无 qt-canvas2d/mcp 残留，`site/` 由 .gitignore 忽略。
+  系统缺 `python3-venv` 时可 `pip3 install --user -r requirements-docs.txt` 代替。
+  README 的 Python 要求已由 3.12+ 修正为实测的 3.10+。
 - `qt5_add_plugin` 的 `CLASS_NAME` 用法（`modular-architecture.md`）基于 Qt 5.14+ 签名，
   个别项目的插件需求更复杂时以 Qt 5.15 文档为准。
 - figma assets 中 `Qt.Fonts`/`Qt.Themes` 等占位 URI 的说明见 §6、§10.3，维持原状。
