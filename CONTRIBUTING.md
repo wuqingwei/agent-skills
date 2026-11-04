@@ -122,9 +122,9 @@ license: LicenseRef-Qt-Commercial OR BSD-3-Clause
 compatibility: >-
   Designed for Claude Code, GitHub Copilot, and similar agents.
 metadata:
-  author: qt-ai-skills
+  author: qt5skills
   version: "1.0"
-  qt-version: "6.x"
+  qt-version: "5.15"
   category: conceptual
 ---
 ```
@@ -659,7 +659,7 @@ What the script does:
 | `--push` | Push to Gerrit (`refs/for/dev`) after committing. |
 
 The version-bump change should land **after** the change that adds the
-new content (skill, MCP server, etc.) is merged, so the release surface
+new content (skill, etc.) is merged, so the release surface
 and the released artifacts agree.
 
 Cutting a long-lived `release/<version>` branch for an independently

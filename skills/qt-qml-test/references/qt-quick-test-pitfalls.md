@@ -72,7 +72,7 @@ without error, but the spy stays at `count: 0` and a
 
 ## Test does not get discovered or run
 
-- **Missing `import QtTest`** at the top of the file.
+- **Missing `import QtTest 1.15`** at the top of the file.
 - **Missing `when: windowShown`** on the `TestCase`. Without
   it, rendering- and focus-dependent assertions run before the
   scene exists.

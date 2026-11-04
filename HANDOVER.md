@@ -1,392 +1,480 @@
-# Qt5 适配交接文档
+# Qt 5 Port Handover Document
 
-> 本仓库是 [wuqingwei/agent-skills](https://github.com/wuqingwei/agent-skills)（The Qt Company
-> 官方 Qt AI Skills 的镜像仓库）的 **Qt 5 适配版**。本文档记录 2026-11 完成的整体移植工作，
-> 供后续维护者了解改动范围、规则与注意事项。
+> This repository is the **Qt 5 adaptation** of
+> [wuqingwei/agent-skills](https://github.com/wuqingwei/agent-skills) (a mirror of The Qt
+> Company's official Qt AI Skills). This document records the porting work completed in
+> November 2026 so future maintainers understand the scope, rules and caveats.
 >
-> 原则：**skill 名字全部保持原名**；Qt5 中不适用的内容删除；其余内容全部移植到 Qt5 语义。
+> Principles: **every skill keeps its original name**; content that does not apply to
+> Qt 5 was removed; everything else was ported to Qt 5 semantics.
 
 ---
 
-## 1. 背景与目标
+## 1. Background and goals
 
-上游仓库是 The Qt Company 官方面向 **Qt 6** 的 AI 编程 skills 集合
-（代码审查、QML 最佳实践、文档生成、性能剖析、测试、Figma 设计系统接入、CMake 工程等）。
-由于主流大模型的训练语料以 Qt 6 为主，直接把上游 skills 用在 Qt 5 项目上会系统性地产出
-Qt 6 专属写法（`qt_add_qml_module`、无版本 import、`pragma ComponentBehavior`、
-`MultiEffect`、`loadFromModule` 等），在 Qt 5 下无法编译或加载。
+The upstream repository is The Qt Company's official set of AI coding skills for
+**Qt 6** (code review, QML best practices, documentation generation, profiling,
+testing, Figma design-system integration, CMake projects, and more).
+Because mainstream LLM training corpora are dominated by Qt 6, applying the upstream
+skills to a Qt 5 project systematically produces Qt 6-only constructs
+(`qt_add_qml_module`, versionless imports, `pragma ComponentBehavior`, `MultiEffect`,
+`loadFromModule`, …) that fail to compile or load on Qt 5.
 
-本仓库的目标：
+Goals of this repository:
 
-1. 全部 skill 适配 **Qt 5.15 LTS**（最后一个、功能最全的 Qt 5 版本）；
-2. Qt5 中不存在的功能/工具链（如 Qt 6.12 的 Canvas2D、官方 MCP 服务）直接删除；
-3. **skill 目录名与 `name` 字段保持与上游一致**，方便与上游文档/工具链对照；
-4. 保留上游的 BSD-3-Clause 许可与版权声明。
+1. Adapt all skills to **Qt 5.15 LTS** (the last and most feature-complete Qt 5 release);
+2. Remove features/tooling that do not exist in Qt 5 (e.g. the Qt 6.12 Canvas2D module,
+   the official MCP servers);
+3. **Keep every skill directory name and `name` field identical to upstream**, so the
+   upstream documentation and toolchains still map 1:1;
+4. Preserve the upstream BSD-3-Clause license and copyright notices.
 
-## 2. 源码拉取方式
+## 2. How the source was fetched
 
-- 直接 `git clone https://github.com/wuqingwei/agent-skills.git` 在部分网络环境下
-  连接 github.com:443 超时；经验证 **codeload.github.com 可直连**，改用：
-  `https://codeload.github.com/wuqingwei/agent-skills/zip/refs/heads/main`
-  下载 zip 后解压为工作树。
-- 交接提交前已通过 `git fetch` 接回上游 main 分支历史，本仓库的提交在上游 main 之上，
-  可正常 diff/pull（见 §13 提交说明）。
+- A direct `git clone https://github.com/wuqingwei/agent-skills.git` timed out on
+  github.com:442 in parts of this network; **codeload.github.com was reachable**,
+  so the working tree was produced by downloading and extracting
+  `https://codeload.github.com/wuqingwei/agent-skills/zip/refs/heads/main`.
+- Before the handover commit, upstream history was re-attached via `git fetch`, so the
+  port commits sit on top of upstream `main` and diff/pull work normally (see §13).
 
-## 3. 适配基线
+## 3. Porting baseline
 
-| 项 | 值 |
+| Item | Value |
 |---|---|
-| Qt 版本 | **5.15 LTS**（所有 SKILL.md `metadata.qt-version: "5.15"`） |
-| 语言标准 | C++11 起（Qt 5.12+ 要求），示例按需 14/17 |
-| QML 模块 | QtQuick 2.15 / QtQuick.Controls 2.15 / QtQuick.Layouts 1.15 / QtQuick.Templates 2.15 / QtTest 1.15 / QtGraphicalEffects 1.15 |
-| 构建系统 | CMake ≥ 3.5（`find_package(Qt5 ...)` + `AUTOMOC/AUTOUIC/AUTORCC` + `qt5_*` 宏 + `.qrc`） |
-| 保留的 skill 数量 | 12（上游 13，删除 qt-canvas2d） |
+| Qt version | **5.15 LTS** (`metadata.qt-version: "5.15"` in every SKILL.md) |
+| Language standard | C++11 or newer (required by Qt 5.12+); examples use 14/17 where needed |
+| QML modules | QtQuick 2.15 / QtQuick.Controls 2.15 / QtQuick.Layouts 1.15 / QtQuick.Templates 2.15 / QtTest 1.15 / QtGraphicalEffects 1.15 |
+| Build system | CMake ≥ 3.5 (`find_package(Qt5 ...)` + `AUTOMOC/AUTOUIC/AUTORCC` + `qt5_*` macros + `.qrc`) |
+| Skills kept | 12 (upstream has 13; `qt-canvas2d` was removed) |
 
-`required property`、`createTemporaryObject`、`ListView.reuseItems`、inline components
-（`component Foo: Bar {}`）均为 **Qt 5.15 引入**的特性，在本仓库的示例与规则中允许使用；
-若目标版本低于 5.15 需回退为 `model.<role>` 访问等旧写法（相关规则文件中有说明）。
+`required property`, `createTemporaryObject`, `ListView.reuseItems` and inline
+components (`component Foo: Bar {}`) are all **introduced in Qt 5.15** and are allowed
+in this repository's examples and rules. For targets older than 5.15 they must be
+replaced with older idioms such as `model.<role>` access (the rule files note this).
 
-## 4. 删除内容清单（Qt5 不适用）
+## 4. Removed content (not applicable to Qt 5)
 
-| 删除项 | 原因 |
+| Removed | Reason |
 |---|---|
-| `skills/qt-canvas2d/`（整个目录） | 讲解的 `QtCanvasPainter`/Canvas2D 模块是 **Qt 6.12** 才引入的新 API；Qt 5 只有旧版 Qt Quick `Canvas` 元素，与该 skill 明确区分的对象 |
-| `mcp/qt-documentation-mcp/` | 官方托管 MCP（`https://qt-docs-mcp.qt.io/mcp`）只覆盖 Qt 6 最新版与活跃 LTS 文档，对 Qt 5 开发有误导性 |
-| `mcp/qml-live-preview-mcp/` | QML 实时预览 MCP 依赖 QmlDebug 的 `qmlpreview` 服务，**要求 Qt 6.12+**，且需从 Qt 在线安装器安装 |
-| `.mcp.json` | 仅注册上述 qt-docs MCP，一并删除 |
-| `docs/mcp/`（5 个文档页） | 上述 MCP 的配套站点文档 |
-| `skills/qt-qml/references/qmlpreview.md` | QML Live Preview MCP 的使用参考（Qt 6.12+），同时删除了 qt-qml SKILL.md 中"每次调用扫描 run_qmlPreview 工具"的整段逻辑 |
-| `skills/qt-figma-component-generation/assets/qt-controls/TreeViewDelegate.qml` + `TreeViewDelegateStyle.qml` | `TreeView`/`TreeViewDelegate` 属 Qt Quick Controls **Qt 6.4+**；Qt 5 的 Controls 1 TreeView 是另一套已废弃 API |
-| `mkdocs.yml` 中 MCP Tools 导航节 | 随 docs/mcp 删除 |
+| `skills/qt-canvas2d/` (whole directory) | The `QtCanvasPainter`/Canvas2D module it teaches is new API from **Qt 6.12**; Qt 5 only has the legacy Qt Quick `Canvas` element, which the skill explicitly distinguishes itself from |
+| `mcp/qt-documentation-mcp/` | The hosted MCP (`https://qt-docs-mcp.qt.io/mcp`) serves only the latest Qt 6 release and active LTS branches — misleading for Qt 5 work |
+| `mcp/qml-live-preview-mcp/` | The live-preview MCP depends on the `qmlpreview` service in QmlDebug, **requires Qt 6.12+**, and is installed via the Qt online installer |
+| `.mcp.json` | Registered only the qt-docs MCP above |
+| `docs/mcp/` (5 pages) | Companion site docs for the MCPs above |
+| `skills/qt-qml/references/qmlpreview.md` | Usage reference for the live-preview MCP (Qt 6.12+); the "scan for a `run_qmlPreview` tool on every invocation" logic was also removed from the qt-qml SKILL.md |
+| `skills/qt-figma-component-generation/assets/qt-controls/TreeViewDelegate.qml` + `TreeViewDelegateStyle.qml` | `TreeView`/`TreeViewDelegate` belong to Qt Quick Controls **Qt 6.4+**; the Qt 5 Controls 1 TreeView is a different, deprecated API |
+| MCP Tools nav section in `mkdocs.yml` | Followed the removal of docs/mcp |
 
-## 5. 各 skill 改动明细
+## 5. Per-skill change details
 
-### 5.1 qt-cmake-project（改动最大）
+### 5.1 qt-cmake-project (largest change)
 
-- `SKILL.md`：10 条硬性规则全部重写为 Qt5 规范（与上游逐条相反）：
-  - 用 `find_package(Qt5 <ver> REQUIRED COMPONENTS ...)`、`add_executable/add_library`、
-    `qt5_add_resources/qt5_add_plugin/qt5_add_translation`；
-    禁止 `qt_standard_project_setup` / `qt_add_*` / 无前缀 `qt_*`（Qt6 API）；
-  - 必须显式 `set(CMAKE_AUTOMOC ON)`（+ AUTOUIC/AUTORCC）与
-    `set(CMAKE_INCLUDE_CURRENT_DIR ON)`——Qt5 没有代劳的辅助函数，
-    漏配 AUTOMOC 是"undefined reference to vtable"的最常见原因；
-  - QML 通过 `.qrc`（或文件系统）+ `engine.load(QUrl("qrc:/..."))` + `qmlRegisterType` 系列注册，
-    QML import 必须带版本；
-  - 链接一律用 `Qt5::Module` 导入目标（禁用已废弃的 `qt5_use_modules`）；
-  - `CMAKE_CXX_STANDARD` 放在 `find_package` 之前。
-- `references/` 六个文件全部重写：
-  - `simple-project.md`：Qt5 最小工程模板（含 qml.qrc + main.cpp 模板）；
-  - `common-mistakes.md`：14 条 LLM 高频错误清单，反向警示 Qt6 写法（§1 Qt6 命令、§2 漏 AUTOMOC、
-    §3 手写 moc_/qrc_ 输出、§7 `qrc:/qt/qml/` 路径、§8 注册晚于 load、§9 无版本 import、
-    §10 Qt6-only API 清单等）；
-  - `modular-architecture.md`：`add_library` + 别名目标 + `VERSION/SOVERSION` +
-    `qt5_add_plugin`（含静态插件 `Q_IMPORT_PLUGIN`/`qt5_import_plugins`，注明 5.14+）；
-  - `qml-integration.md`：Qt5 没有 `qt_add_qml_module`——qmldir 手写模块、
-    `pragma Singleton` + qmldir `singleton` 行、`qmlRegisterSingletonType`（URL 形式与工厂形式）、
-    注册必须发生在 `engine.load()` 之前；
-  - `resources.md`：`.qrc` 为主（Qt5 中手写 .qrc 不是遗留做法而是标准）、字体
-    `QFontDatabase::addApplicationFont`、翻译 `qt5_create_translation/qt5_add_translation`、
-    三平台应用图标；
-  - `configure.md`：`cmake -B build -DCMAKE_PREFIX_PATH=<Qt5.15 kit>`，Qt5 安装根目录表。
+- `SKILL.md`: all 10 hard rules rewritten for Qt 5 (each is the inverse of upstream):
+  - Use `find_package(Qt5 <ver> REQUIRED COMPONENTS ...)`, `add_executable/add_library`,
+    `qt5_add_resources`, `qt5_add_plugin`, `qt5_add_translation`;
+    forbid `qt_standard_project_setup` / `qt_add_*` / unprefixed `qt_*` (Qt 6 API);
+  - Set `CMAKE_AUTOMOC ON` explicitly (+ AUTOUIC/AUTORCC) together with
+    `set(CMAKE_INCLUDE_CURRENT_DIR ON)` — Qt 5 has no helper that does this, and a
+    missing AUTOMOC is the most common cause of "undefined reference to vtable";
+  - QML ships through `.qrc` (or the filesystem) + `engine.load(QUrl("qrc:/..."))` +
+    the `qmlRegisterType` family; QML imports must carry versions;
+  - Always link `Qt5::Module` imported targets (the deprecated `qt5_use_modules` is banned);
+  - `CMAKE_CXX_STANDARD` goes before `find_package`.
+- All six `references/` files rewritten:
+  - `simple-project.md`: minimal Qt 5 project template (qml.qrc + main.cpp templates);
+  - `common-mistakes.md`: 14 frequent LLM mistakes as inverted Qt 6 warnings
+    (§1 Qt 6 commands, §2 missing AUTOMOC, §3 hand-written moc_/qrc_ outputs,
+    §7 `qrc:/qt/qml/` paths, §8 registering after load, §9 versionless imports,
+    §10 the Qt 6-only API list, …);
+  - `modular-architecture.md`: `add_library` + alias targets + `VERSION/SOVERSION` +
+    `qt5_add_plugin` (including static plugins via `Q_IMPORT_PLUGIN` /
+    `qt5_import_plugins`, noted as 5.14+);
+  - `qml-integration.md`: Qt 5 has no `qt_add_qml_module` — hand-written qmldir modules,
+    `pragma Singleton` + the qmldir `singleton` line, `qmlRegisterSingletonType`
+    (URL form and factory form), registration must happen before `engine.load()`;
+  - `resources.md`: `.qrc` first-class (hand-written `.qrc` is the standard, not a
+    legacy form, in Qt 5), fonts via `QFontDatabase::addApplicationFont`, translations
+    via `qt5_create_translation/qt5_add_translation`, app icons on three platforms;
+  - `configure.md`: `cmake -B build -DCMAKE_PREFIX_PATH=<Qt5.15 kit>`, plus a table of
+    Qt 5 installation roots.
+- After the first review, the `qt5_add_resources` signature was corrected to the Qt 5
+  variable form and `qt5_add_translations` (a Qt 6 macro name) was replaced — see §14.
 
 ### 5.2 qt-qml
 
-- 删除"每次调用扫描 MCP `run_qmlPreview` 工具 + 校验 Qt ≥ 6.12"整节及 `references/qmlpreview.md`。
-- Imports 规则反转：**Qt5 每条模块 import 必须带版本**；字符串 import（`import "..."`）永不带版本；
-  `QtQuick.Window 2.15` 需要显式导入；`QtQuick.Controls.Basic` 不存在，
-  运行时样式选择用 `QT_QUICK_CONTROLS_STYLE` / `qtquickcontrols2.conf`，
-  样式属性用 `import QtQuick.Controls.Material 2.15` 等模块。
-- States：`PropertyChanges { target: id; ... }` 是 Qt5 唯一正确形式（`id.prop` 写法为 Qt6）。
-- Delegates：`required property` 与 `reuseItems` 标注为 Qt 5.15+。
-- Performance：`MultiEffect`（Qt 6.5+）不存在 → 使用 `QtGraphicalEffects`（GaussianBlur/DropShadow 等）。
-- 预输出清单同步更新。
+- Removed the entire "scan connected MCP servers for `run_qmlPreview` + verify
+  Qt ≥ 6.12" section and `references/qmlpreview.md`.
+- Imports rules inverted: **every Qt 5 module import carries a version**; string
+  imports (`import "..."`) never do; `QtQuick.Window 2.15` must be imported
+  explicitly; `QtQuick.Controls.Basic` does not exist — runtime style selection uses
+  `QT_QUICK_CONTROLS_STYLE` / `qtquickcontrols2.conf`, and style-specific attached
+  properties use modules like `import QtQuick.Controls.Material 2.15`.
+- States: `PropertyChanges { target: id; ... }` is the only correct form in Qt 5
+  (the `id.prop` form is Qt 6).
+- Delegates: `required property` and `reuseItems` annotated as Qt 5.15+.
+- Performance: `MultiEffect` (Qt 6.5+) does not exist → use `QtGraphicalEffects`
+  (GaussianBlur, DropShadow, …).
+- Pre-output checklist updated.
 
 ### 5.3 qt-qml-review
 
-- **lint 脚本 `references/lint-scripts/qt_qml_lint.py`**（详见 §7.1）。
-- `references/qt-qml-review-checklist.md`：删除 IMP-1/IMP-3/IMP-7 与 STA-1 的 Qt6 语义，
-  IMP-2 反转为"缺版本号"，新增"QtGraphicalEffects 在 Qt5 是正确模块"的说明；
-  BND-1/DEL-1 去除 qmlsc/qmlls 等 Qt6 工具引用。
-- `references/agent-rules.md`：标题与语义 Qt5 化；删除 `pragma ComponentBehavior: Bound` 缺失检查
-  （Qt 6.5+ 特性）；Context property 建议改为 `qmlRegisterSingletonType`；
-  `Binding.restoreMode` 说明改为 Qt5 语义（5.15 引入，更早版本无此属性）。
-- `SKILL.md`：描述 Qt5、规则数 48+ → 45+、qmllint 定位改为"语法级检查"（Qt5 qmllint 无语义分析、
-  无 `--json`）、探测路径改为 Qt5 kit（`~/Qt*`、`clang_64`、`msvc2019_64`、`mingw81_64`）、
-  示例报告行改为 `IMP-2 Unversioned import`。
-- `platforms/windsurf.md`：同步压缩版规则。
+- **Linter `references/lint-scripts/qt_qml_lint.py`** (details in §7.1).
+- `references/qt-qml-review-checklist.md`: dropped the Qt 6 semantics of
+  IMP-1/IMP-3/IMP-7 and STA-1, inverted IMP-2 to "missing version numbers", added the
+  note that `QtGraphicalEffects` is the correct module in Qt 5; BND-1/DEL-1 lost their
+  qmlsc/qmlls (Qt 6 tooling) references.
+- `references/agent-rules.md`: retitled and re-semantics for Qt 5; removed the
+  missing-`pragma ComponentBehavior: Bound` check (a Qt 6.5+ feature); the
+  context-property advice now points at `qmlRegisterSingletonType`; the
+  `Binding.restoreMode` note now describes Qt 5 semantics (introduced in 5.15).
+- `SKILL.md`: description says Qt 5, rule count 48+ → 45+, qmllint repositioned as a
+  "syntax-level checker" (Qt 5 qmllint has no semantic analysis and no `--json`),
+  discovery paths switched to Qt 5 kits (`~/Qt*`, `clang_64`, `msvc2019_64`,
+  `mingw81_64`), and the example report row reads `IMP-2 Unversioned import`.
+- `platforms/windsurf.md`: condensed rules synced.
 
 ### 5.4 qt-cpp-review
 
-- **lint 脚本 `references/lint-scripts/qt_review_lint.py`**（详见 §7.2）。
-- `references/qt-deprecated-classes.md`：移除 QPair/QSharedDataPointer/QChar 三行（Qt5 中为惯用法），
-  新增"Qt5 中不标记"说明段；`q20::make_unique_for_overwrite`（Qt6 shim）改为 std 等价建议。
-- `references/qt-framework-checklist.md`：FW-DOC-2 → "What's New in Qt 5.15"；
-  FW-VAL-5 反转（Qt5 中 Q_DECLARE_METATYPE 是必需的）；FW-REL-1 去除 q20 依赖；
-  FW-SMF-4 去除 `Q_IMPLICIT`（Qt 6.4 宏）。
-- `SKILL.md`：Qt5、规则数 60+ → 55+；`references/agent-rules.md`、`qt-review-checklist.md` 标题 Qt5 化；
-  `platforms/windsurf.md` 同步。
-- `agents/cpp-review-agent.md`："Qt6 C++ reviewer" → "Qt5 C++ reviewer"。
-- `tests/qt-cpp-review/`：删除与上述 5 条规则对应的期望项与夹具
-  （DEP-5/DEP-6/DEP-13/VAL-6/PAT-6），回归测试保持全绿（见 §8）。
+- **Linter `references/lint-scripts/qt_review_lint.py`** (details in §7.2).
+- `references/qt-deprecated-classes.md`: removed the QPair/QSharedDataPointer/QChar
+  rows (idiomatic in Qt 5), added a "not flagged in Qt 5" paragraph; the
+  `q20::make_unique_for_overwrite` advice (a Qt 6 shim) replaced by std equivalents.
+- `references/qt-framework-checklist.md`: FW-DOC-2 → "What's New in Qt 5.15";
+  FW-VAL-5 inverted (Q_DECLARE_METATYPE is required in Qt 5); FW-REL-1 no longer
+  depends on q20; FW-SMF-4 dropped `Q_IMPLICIT` (a Qt 6.4 macro).
+- `SKILL.md`: Qt 5, rule count 60+ → 55+; `references/agent-rules.md` and
+  `qt-review-checklist.md` retitled; `platforms/windsurf.md` synced.
+- `agents/cpp-review-agent.md`: "Qt6 C++ reviewer" → "Qt5 C++ reviewer".
+- `tests/qt-cpp-review/`: removed the expectations and fixtures for the five dropped
+  rules (DEP-5/DEP-6/DEP-13/VAL-6/PAT-6); the regression suite stayed green (§8).
 
 ### 5.5 qt-qml-test
 
-- Import 规则：测试文件 `import QtQuick 2.15` + `import QtTest 1.15`（原规则"不带版本"）。
-- **`references/qt-quick-test-source-import.md` 整体重写**：Qt6 的
-  `qt_add_qml_module`/库-可执行分类不存在；Qt5 判定树改为
-  （1）`qmlRegisterType/qmlRegisterSingletonType` 注册或磁盘 qmldir 模块 → 版本化 `import <URI> <maj.min>`；
-  （2）其余 → 相对路径 `import "../..."`；并说明 qrc-only 资源不能被磁盘测试相对导入的边界。
-- 原"Qt Quick 3D 源跳过"规则（rule 45）删除，rule 46/47 重编号为 45/46（共 46 条），
-  全部引用点（SKILL.md、rules、pitfalls、pre-send-scan、copilot 变体）同步。
-  （首版提交中 `qt-quick-test-rules.md` 的条目编号漏改且残留 "Qt Quick 3D source
-  handling" 标题，已于复审时修复，见 §14。）
-- `QT_QML_SINGLETON_TYPE TRUE`（Qt6 CMake 属性）全部替换为 qmldir `singleton` 行 /
-  `qmlRegisterSingletonType` 语义。
-- `references/qt-quick-test-template.md`：模板 import 全部版本化；Variant 7 的 URL 表改为
-  Qt5 判定（测试二进制自身 qrc 可达 → `qrc:/<Prefix>/<Path>`；否则 `Qt.resolvedUrl("../..")`），
-  移除 `qrc:/qt/qml/` 路径与 `availableStyles: ["Basic"]` 示例值。
-- `references/qt-quick-test-project-context.md`：上下文读取从 grep `qt_add_qml_module URI` 改为
-  grep `qmlRegisterType`/`qmlRegisterSingletonType`/`qmlRegisterUncreatableType`。
-- `platforms/copilot.prompt.md`：自包含变体同步上述全部改动。
+- Import rule: test files use `import QtQuick 2.15` + `import QtTest 1.15`
+  (upstream said "without versions").
+- **`references/qt-quick-test-source-import.md` fully rewritten**: upstream's
+  `qt_add_qml_module` / library-vs-executable classification does not exist in Qt 5;
+  the new decision tree is (1) a `qmlRegisterType`/`qmlRegisterSingletonType`
+  registration or an on-disk qmldir module → versioned `import <URI> <maj.min>`;
+  (2) otherwise → a relative directory import `import "../..."`; plus the caveat that
+  qrc-only resources cannot be reached by a relative import from a test on disk.
+- The "skip Qt Quick 3D sources" rule (rule 45) was removed and rules 46/47
+  renumbered to 45/46 (46 rules total), with all cross-references synced
+  (SKILL.md, rules, pitfalls, pre-send-scan, copilot variant). The first commit
+  missed the renumbering inside `qt-quick-test-rules.md` itself — fixed in review,
+  see §14.
+- Every `QT_QML_SINGLETON_TYPE TRUE` (a Qt 6 CMake property) replaced by the qmldir
+  `singleton` line / `qmlRegisterSingletonType` semantics.
+- `references/qt-quick-test-template.md`: all template imports versioned; Variant 7's
+  URL table switched to the Qt 5 decision (reachable from the test binary's own qrc →
+  `qrc:/<Prefix>/<Path>`; otherwise `Qt.resolvedUrl("../..")`); removed `qrc:/qt/qml/`
+  paths and the `availableStyles: ["Basic"]` example value.
+- `references/qt-quick-test-project-context.md`: context reading now greps
+  `qmlRegisterType`/`qmlRegisterSingletonType`/`qmlRegisterUncreatableType` instead of
+  `qt_add_qml_module URI`.
+- `platforms/copilot.prompt.md`: the self-contained variant synced with all of the above.
 
 ### 5.6 qt-qml-test-run
 
-- **`references/qt-quick-test-cmake.md` 整体重写（491 行 → Qt5 版）**：
-  - 接线模板：`find_package(Qt5 5.15 REQUIRED COMPONENTS QuickTest)` + `add_executable` +
-    `set(CMAKE_AUTOMOC ON)`（Qt5 无自动设置）；Widgets/Charts/WebEngineWidgets 变体判定保留；
-  - 删除 Qt6 特有的 module-on-executable 重构与 STATIC 插件机制；
-    新增"项目如何暴露 QML 类型"检测（注册库链接 / qrc 归属 / 磁盘 qmldir + `-import`）；
-  - 常见失败清单改为 Qt5 语义（QuickTest 包安装、AUTOMOC 缺失、`-import` 路径等）；
-  - 保留 JUnit 直连二进制输出（`-o report.xml,junitxml`）与检测模式。
-- `SKILL.md`：Step 3 异常条件改为"C++ 注册的 URI 直连 qmltestrunner 无法解析 → 必须接线"；
-  Step 4a 从 module-on-executable 检查改为"项目 QML 类型暴露检查"；Step 4b 跳过条件 Qt5 化；
-  Qt 安装路径表改 5.x（`/home/*/Qt5.*/5.*/gcc_64`、`/usr/lib/qt5`、`clang_64`、`mingw81_64`）。
+- **`references/qt-quick-test-cmake.md` fully rewritten (491 lines → Qt 5 version)**:
+  - Wiring template: `find_package(Qt5 5.15 REQUIRED COMPONENTS QuickTest)` +
+    `add_executable` + `set(CMAKE_AUTOMOC ON)` (nothing sets it for you in Qt 5);
+    the Widgets/Charts/WebEngineWidgets variant selection was kept;
+  - Dropped the Qt 6-only module-on-executable refactor and STATIC plugin machinery;
+    added a "how the project exposes its QML types" detection (registering library to
+    link / qrc ownership / on-disk qmldir + `-import`);
+  - The common-failure list rewritten for Qt 5 (QuickTest dev package, missing
+    AUTOMOC, `-import` paths, …);
+  - Kept binary-direct JUnit output (`-o report.xml,junitxml`) and the detection
+    patterns.
+- `SKILL.md`: the Step 3 exception is now "a URI registered from C++ cannot be
+  resolved by a standalone qmltestrunner → wiring is the only path"; Step 4a became
+  the "project QML type exposure check"; Step 4b skip conditions Qt 5-ified; the Qt
+  installation table now lists 5.x paths (`/home/*/Qt5.*/5.*/gcc_64`, `/usr/lib/qt5`,
+  `clang_64`, `mingw81_64`).
 
 ### 5.7 qt-qml-profiler
 
-- `SKILL.md`：Qt 安装探测路径全面改为 5.x；`$Qt6_DIR` → `$Qt5_DIR`；
-  qrc 源映射说明改为 `qrc:/<prefix>/<File>.qml`（Qt5 无隐式 `qrc:/qt/qml/` 前缀）；
-  Quick 3D 范围说明收敛为安全护栏（Qt5 标准应用无 3D 事件）。
-- `references/scripts/parse-qmlprofiler-trace.py` 与 `qml-performance-anti-patterns.md`
-  为格式级实现（.qtd 格式 Qt5.15 一致），未做语义改动。
+- `SKILL.md`: Qt discovery paths switched to 5.x; `$Qt6_DIR` → `$Qt5_DIR`;
+  the qrc source-mapping note now says `qrc:/<prefix>/<File>.qml` (Qt 5 has no
+  implicit `qrc:/qt/qml/` prefix); the Quick 3D scope note reduced to a safety guard
+  (standard Qt 5 applications contain no 3D events).
+- `references/scripts/parse-qmlprofiler-trace.py` and
+  `qml-performance-anti-patterns.md` are format-level implementations (the `.qtd`
+  format is identical on Qt 5.15) and were left semantically unchanged.
 
 ### 5.8 qt-figma-token-extraction
 
-- Step 0：脚手架 `main.cpp` 从 `engine.loadFromModule()` 改为
-  `engine.load(QUrl("qrc:/main.qml"))`；删除 `qrc:/qt/qml/` 与 `_qs` 的 Qt6 注记；
-  占位 `Main.qml` 改回 `main.qml` 并版本化 import。
-- Step 6 生成规则：import 必须带版本；效果模块从 `MultiEffect`/`QtQuick.Effects` 改为
-  `import QtGraphicalEffects 1.15`；单例注册从 CMake `set_source_files_properties` 改为
-  `qmlRegisterSingletonType`。
-- Step 7：CMake 模板整体替换为 Qt5 版（AUTOMOC/AUTORCC + `qml.qrc`），
-  并给出 `main.cpp` 中四个单例的 `qmlRegisterSingletonType` 注册示例（URL 形式 + 工厂形式）。
-- Step 8 汇总与 Token Categories Checklist 同步。
-- `references/token-mapping.md`：阴影 token 从 `MultiEffect` 归一化 blur（0.0–1.0）改为
-  `DropShadow` 像素 radius + samples 的映射示例。
-- `examples/` 5 个 QML 模板随 §6 通用转换同步。
+- Step 0: the scaffold `main.cpp` went from `engine.loadFromModule()` to
+  `engine.load(QUrl("qrc:/main.qml"))`; removed the `qrc:/qt/qml/` and `_qs` Qt 6
+  notes; the placeholder went back from `Main.qml` to `main.qml` with a versioned import.
+- Step 6 generation rules: imports must carry versions; the effects module went from
+  `MultiEffect`/`QtQuick.Effects` to `import QtGraphicalEffects 1.15`; singleton
+  registration went from the CMake `set_source_files_properties` property to
+  `qmlRegisterSingletonType`.
+- Step 7: the CMake template replaced wholesale with the Qt 5 version
+  (AUTOMOC/AUTORCC + `qml.qrc`), with a `main.cpp` example registering all four
+  singletons via `qmlRegisterSingletonType` (URL form and factory form).
+- Step 8 summary and the Token Categories Checklist synced.
+- `references/token-mapping.md`: shadow tokens now map to `DropShadow` pixel
+  radius + samples instead of `MultiEffect`'s normalized blur (0.0–1.0).
+- The five `examples/` QML templates followed the §6 mechanical conversion.
 
 ### 5.9 qt-figma-component-generation
 
-- Base type 选择表：`(from QtQuick.Controls.Basic)` → `(from QtQuick.Controls 2.15)`。
-- Step 7 收尾建议从 `qt_add_qml_module QML_FILES` 改为"加入项目 `qml.qrc` +
-  `qmlRegisterType` 注册"。
-- 使用示例 import 版本化；skill 引用名 `qt-development-skills:qt-qml` → `qt-qml`。
-- `assets/qt-controls/` 77 个 QML + `references/` 5 个 QML 随 §6 通用转换同步；
-  删除 `TreeViewDelegate*.qml` 两个文件。
+- Base-type table: `(from QtQuick.Controls.Basic)` → `(from QtQuick.Controls 2.15)`.
+- The Step 7 closing advice went from `qt_add_qml_module QML_FILES` to "add to the
+  project's `qml.qrc` + register C++ types with `qmlRegisterType`".
+- Example imports versioned; the skill reference `qt-development-skills:qt-qml` → `qt-qml`.
+- The 77 `assets/qt-controls/` QML files and 5 `references/` QML files followed the
+  §6 mechanical conversion; the two `TreeViewDelegate*.qml` files were removed.
 
-### 5.10 qt-cpp-docs / qt-qml-docs / qt-ui-design（轻量）
+### 5.10 qt-cpp-docs / qt-qml-docs / qt-ui-design (light)
 
-- 三个 SKILL.md 元数据 Qt5 化。
-- qt-cpp-docs §13 QML Exposure：注册方式从 `QML_ELEMENT`/`QML_SINGLETON` 宏改为
-  `qmlRegisterType`/`qmlRegisterUncreatableType`/`qmlRegisterSingletonType`（Qt5 无注册宏）。
-- qt-ui-design：样式清单改为 Qt5 的 Default/Fusion/Imagine/Material/Universal
-  （iOS、FluentWinUI3 为 Qt 6.7+）；TypeScale 单例注册示例从 `qt_add_qml_module` 改为
-  qmldir + `engine.addImportPath`；`prefers-reduced-motion` 段措辞 Qt5 化；
-  文档链接 `doc.qt.io/qt-6/...` → `doc.qt.io/qt-5.15/...`。
+- All three SKILL.md metadata blocks Qt 5-ified.
+- qt-cpp-docs §13 QML Exposure: registration went from the `QML_ELEMENT`/
+  `QML_SINGLETON` macros to `qmlRegisterType`/`qmlRegisterUncreatableType`/
+  `qmlRegisterSingletonType` (Qt 5 has no registration macros).
+- qt-ui-design: the style list now reads Default/Fusion/Imagine/Material/Universal
+  (iOS and FluentWinUI3 are Qt 6.7+); the TypeScale singleton example went from
+  `qt_add_qml_module` to a qmldir + `engine.addImportPath`; the
+  `prefers-reduced-motion` paragraph reworded for Qt 5; doc links
+  `doc.qt.io/qt-6/...` → `doc.qt.io/qt-5.15/...`.
 
-## 6. figma assets 的通用脚本化转换
+## 6. Mechanical conversion of the Figma assets
 
-`assets/qt-controls/`（77 文件）、`references/`（5 文件）、token-extraction `examples/`（5 文件）
-通过脚本统一转换：
+`assets/qt-controls/` (77 files), `references/` (5 files) and the token-extraction
+`examples/` (5 files) were converted by script:
 
-| 转换项 | 规则 |
+| Conversion | Rule |
 |---|---|
-| import 版本化 | QtQuick→2.15、QtQuick.Window→2.15、QtQuick.Controls→2.15、QtQuick.Layouts→1.15、QtQuick.Templates→2.15、QtGraphicalEffects→1.15、QtTest→1.15、QtQml.Models→2.15、QtQuick.Shapes→1.15 等；**带 `as` 别名的 import 同样处理** |
-| 样式导入 | `import QtQuick.Controls.Basic` → `import QtQuick.Controls 2.15`（Qt5 无 Basic 样式） |
-| Qt6 pragma | 删除所有 `pragma ComponentBehavior: Bound` 行（Qt 6.5+） |
-| 类型化函数注解 | `function f(...): int` → `function f(...)`（避免 5.15 之前的解析差异） |
-| 项目自有 URI | `import Qt.Fonts as Fonts`、`import Qt.Themes as Themes` 等保留无版本——它们是演示工程自有模块的占位符，实际使用时应替换为项目注册的 URI+版本 |
+| Versioned imports | QtQuick→2.15, QtQuick.Window→2.15, QtQuick.Controls→2.15, QtQuick.Layouts→1.15, QtQuick.Templates→2.15, QtGraphicalEffects→1.15, QtTest→1.15, QtQml.Models→2.15, QtQuick.Shapes→1.15, …; **aliased imports handled too** |
+| Style imports | `import QtQuick.Controls.Basic` → `import QtQuick.Controls 2.15` (Qt 5 has no Basic style) |
+| Qt 6 pragma | all `pragma ComponentBehavior: Bound` lines removed (Qt 6.5+) |
+| Typed function annotations | `function f(...): int` → `function f(...)` (avoids pre-5.15 parse differences) |
+| Project-local URIs | `import Qt.Fonts as Fonts`, `import Qt.Themes as Themes`, … left unversioned — they are placeholders for the demo project's own modules and should be replaced by the project's registered URI + version in real use |
 
-其余 Qt5.15 已支持的特性（`required property`、inline components、`HoverHandler` 等）保留。
+Features Qt 5.15 already supports (`required property`, inline components,
+`HoverHandler`, …) were kept.
 
-## 7. Lint 脚本改动明细
+## 7. Lint script change details
 
-### 7.1 qt_qml_lint.py（QML linter，45+ 规则）
+### 7.1 qt_qml_lint.py (QML linter, 45+ rules)
 
-- **IMP-2 反转**：原"版本号 import 报错"（Qt6）→ 现"无版本 Qt 模块 import 报错"
-  （`import QtQuick` 命中，`import "qrc:/..."`、`import ..` 不命中）。
-  复审后改为**白名单语义**：只对内置的 Qt 官方模块清单（KNOWN_QT_MODULES）要求版本；
-  以 `Qt` 开头的项目自有 URI（如 figma assets 的 `Qt.Fonts`/`Qt.Themes`）无版本
-  import 在 Qt5 是合法写法，不报（见 §14）。
-- 删除 Qt6 专属规则：IMP-1（QtQuick.Window 冗余）、IMP-3（Controls.Basic 样式限定）、
-  IMP-7（QtGraphicalEffects 导入报错——Qt5 中它是正确模块）、STA-1（PropertyChanges `target:`
-  弃用警告——Qt5 中它是唯一正确形式）。
-- 消息修正：BND-1/DEL-1 去除 qmlsc 引用；IMP-4 说明去除 `qmlformat --sort-imports`（Qt6 工具）。
-- **qmllint 集成重写**：Qt5 的 qmllint 是语法级检查器（无 `--json`、无警告 ID），
-  `run_qmllint()` 改为文本输出解析（`Warning: file:line: msg` 及容错回退，
-  无法定位的行聚合为行 0 的 `QL` finding）；kit 探测改为 Qt5：
-  `qtpaths/qmake`（去掉 `*6` 变体）、安装器根目录 glob `~/Qt*`（兼容 Qt5 安装器的
-  `~/Qt5.15.2/5.15.2/<kit>` 双层布局）、版本正则 `5\.(\d+)\.(\d+)`。
-- 复用相关规则保留：`reuseItems`/DEL-2/DEL-4（Qt 5.15 引入）、SIG-2（5.15 起弃用旧式
-  `onFoo:`，与 Qt5 一致）。
+- **IMP-2 inverted**: "versioned import" error (Qt 6) → "unversioned Qt module
+  import" error (`import QtQuick` fires; `import "qrc:/..."` and `import ..` do not).
+  After review this became an **allowlist rule**: only Qt-shipped modules in the
+  built-in KNOWN_QT_MODULES list require a version; project-local URIs starting with
+  `Qt` (e.g. the figma assets' `Qt.Fonts`/`Qt.Themes`) are legal unversioned in Qt 5
+  and are not flagged (see §14).
+- Qt 6-only rules removed: IMP-1 (redundant QtQuick.Window), IMP-3 (Controls.Basic
+  style qualification), IMP-7 (QtGraphicalEffects import — the correct module in
+  Qt 5), STA-1 (PropertyChanges `target:` deprecation — the only correct form in
+  Qt 5).
+- Message fixes: BND-1/DEL-1 lost their qmlsc references; the IMP-4 note lost
+  `qmlformat --sort-imports` (a Qt 6 tool).
+- **qmllint integration rewritten**: Qt 5's qmllint is a syntax-level checker (no
+  `--json`, no warning ids), so `run_qmllint()` now parses its text output
+  (`Warning: file:line: msg` plus a fallback; unlocatable lines aggregate into a
+  line-0 `QL` finding); kit discovery switched to Qt 5: `qtpaths`/`qmake` (the `*6`
+  variants dropped), installer roots globbed as `~/Qt*` (covering the Qt 5 installer's
+  `~/Qt5.15.2/5.15.2/<kit>` double layout), version regex `5\.(\d+)\.(\d+)`.
+- Reuse-related rules kept: `reuseItems`/DEL-2/DEL-4 (Qt 5.15), SIG-2 (the old
+  `onFoo:` style deprecated since Qt 5.15, consistent with Qt 5).
 
-### 7.2 qt_review_lint.py（C++ linter，55+ 规则）
+### 7.2 qt_review_lint.py (C++ linter, 55+ rules)
 
-删除 5 条 Qt6 才成立的规则并同步清理正则与测试夹具：
+Five rules that only hold on Qt 6 were removed, with their regexes and test fixtures
+cleaned up:
 
-| 规则 | 删除原因 |
+| Rule | Why removed |
 |---|---|
-| DEP-5 QPair→std::pair | QPair 在 Qt5 是惯用类型（Qt 6.0 起才成为别名） |
-| DEP-6 QSharedDataPointer→QExplicitly… | QSDP 是 Qt5 标准的 COW 惯用法 |
-| DEP-13 QChar→char16_t | QChar 是 Qt5 正常字符类型 |
-| VAL-6 Q_DECLARE_METATYPE 移除 | Qt5 中 QVariant/排队信号参数必需它 |
-| PAT-6 q20::make_unique_for_overwrite | `q20::*` 是 Qt6 内部 shim |
+| DEP-5 QPair→std::pair | QPair is idiomatic in Qt 5 (only an alias since Qt 6.0) |
+| DEP-6 QSharedDataPointer→QExplicitly… | QSDP is the standard Qt 5 COW idiom |
+| DEP-13 QChar→char16_t | QChar is the normal Qt 5 character type |
+| VAL-6 Q_DECLARE_METATYPE removal | Required in Qt 5 for QVariant and queued signal arguments |
+| PAT-6 q20::make_unique_for_overwrite | `q20::*` is a Qt 6 internal shim |
 
-其余 DEP 规则（QScopedPointer→unique_ptr、foreach→range-for、qMin→std::min 等）为通用现代
-C++ 建议，Qt5 亦成立，保留。TMO-1 的 `QDeadlineTimer` 为 Qt 5.8+，保留。
+The remaining DEP rules (QScopedPointer→unique_ptr, foreach→range-for, qMin→std::min,
+…) are generic modern-C++ advice that also holds on Qt 5 and were kept. TMO-1's
+`QDeadlineTimer` is Qt 5.8+ and was kept.
 
-## 8. 测试与验证记录
+## 8. Testing and verification record
 
-| 验证项 | 结果 |
+| Verification | Result |
 |---|---|
-| `tests/qt-cpp-review/run_tests.py`（C++ linter 回归） | **55/55 universal + 3/3 framework + `--diff` 模式全部通过**（测试夹具同步移除已删规则） |
-| QML linter 冒烟（构造样例） | 无版本 import 正确触发 IMP-2；`QtGraphicalEffects 1.15` 不再误报；`PropertyChanges target:` 不再报 STA-1；IMG-1/IMG-2/BND-1 等常规规则正常 |
-| QML linter 对 figma examples 实跑 | 正常输出 9 项发现（ORD/STY），无脚本异常 |
-| 全仓 grep 复查 | QML assets 中 Qt6 构造零残留；SKILL.md 中仅存的 "Qt 6" 字样均为防御性警示（"Qt5 中不要写 X"类）；无版本 Qt import 残留 0 |
-| 两个 lint 脚本 `ast.parse` | 语法通过 |
+| `tests/qt-cpp-review/run_tests.py` (C++ linter regression) | **55/55 universal + 3/3 framework + `--diff` mode all pass** (fixtures synced with the dropped rules) |
+| QML linter smoke (constructed samples) | unversioned import correctly fires IMP-2; `QtGraphicalEffects 1.15` no longer false-positives; `PropertyChanges target:` no longer fires STA-1; IMG-1/IMG-2/BND-1 and other regular rules behave |
+| QML linter on the figma examples | 9 findings (ORD/STY), no script errors |
+| Repo-wide grep | zero Qt 6 constructs left in the QML assets; the only "Qt 6" mentions left in SKILL.md files are defensive warnings ("do not write X in Qt 5"); zero unversioned Qt imports |
+| `ast.parse` on both lint scripts | syntax OK |
 
-## 9. 配套设施与元数据改动
+## 9. Auxiliary files and metadata changes
 
-| 文件 | 改动 |
+| File | Change |
 |---|---|
-| `README.md` | 重写：Qt5 定位与移植说明、12 skill 表、删除项说明、安装命令（`qt5-development-skills`）、仓库结构（去 mcp/）、示例 frontmatter（`qt-version: "5.15"`）、文档站章节精简 |
-| `.claude-plugin/plugin.json` | 插件名 `qt-development-skills` → `qt5-development-skills`，版本 1.8.0 → 1.0.0，描述去除 MCP 措辞 |
-| `.claude-plugin/marketplace.json` | 同步改名/改版本；keywords 增加 `qt5`、去除 `mcp`；repository URL 指向 wuqingwei/agent-skills |
-| `gemini-extension.json` | name → `qt5skills`，描述 Qt5 化 |
-| `mkdocs.yml` | site_description Qt5 化；删除 MCP Tools 导航；repo_url 指向 wuqingwei/agent-skills |
-| `docs/index.md` / `docs/getting-started.md` | 重写：去除 MCP 卡片/章节，突出"模型会拿 Qt6 写法伤害 Qt5 项目"的定位；安装命令更新 |
-| `docs/skills/requirements.md` | 每行依赖 Qt5 化（qmlprofiler/qmltestrunner 5.15、CMake 3.5+、生成测试使用版本化 import 等） |
-| `docs/skills/concepts.md` | 触发词描述 Qt6→Qt5 |
-| `gen_skills.py` | `GITHUB_BLOB` 指向 wuqingwei/agent-skills |
-| `CONTRIBUTING.md` | 示例 description Qt6→Qt5 |
+| `README.md` | Rewritten: Qt 5 positioning and port notes, the 12-skill table, removal notes, install commands (`qt5-development-skills`), repo structure (mcp/ gone), example frontmatter (`qt-version: "5.15"`), trimmed docs-site sections |
+| `.claude-plugin/plugin.json` | Plugin name `qt-development-skills` → `qt5-development-skills`, version 1.8.0 → 1.0.0, MCP wording removed from the description |
+| `.claude-plugin/marketplace.json` | Renamed/reversioned in sync; `qt5` added to keywords, `mcp` removed; repository URL points at wuqingwei/agent-skills |
+| `gemini-extension.json` | name → `qt5skills`, description Qt 5-ified |
+| `mkdocs.yml` | site_description Qt 5-ified; MCP Tools nav removed; repo_url → wuqingwei/agent-skills |
+| `docs/index.md` / `docs/getting-started.md` | Rewritten: MCP cards/sections gone, positioning now "models hurt Qt 5 projects with Qt 6 idioms"; install commands updated |
+| `docs/skills/requirements.md` | Every dependency row Qt 5-ified (qmlprofiler/qmltestrunner 5.15, CMake 3.5+, generated tests use versioned imports, …) |
+| `docs/skills/concepts.md` | Trigger descriptions Qt 6→Qt 5 |
+| `gen_skills.py` | `GITHUB_BLOB` → wuqingwei/agent-skills |
+| `CONTRIBUTING.md` | Example description Qt 6→Qt 5; after review also `qt-version: "6.x"` → `"5.15"` and `author: qt-ai-skills` → `qt5skills` (see §14.5) |
 | `agents/cpp-review-agent.md` / `agents/qml-review-agent.md` | "Qt6 … reviewer" → "Qt5 … reviewer" |
-| `tools/`、`LICENSE`、`overrides/`、`requirements-docs.txt` | 未改动（工具脚本与品牌样式与 Qt 版本无关） |
+| `tools/`, `LICENSE`, `overrides/`, `requirements-docs.txt` | Unchanged (tool scripts and branding are Qt-version-agnostic); `tools/README.md` lost a "MCP server" mention in review (see §14.5) |
 
-## 10. 已知限制与注意事项
+## 10. Known limitations and caveats
 
-1. **Qt 版本下限**：规则与示例假设 5.15。若项目低于 5.15，`required property`、
-   `createTemporaryObject`、`ListView.reuseItems`、inline components、`Binding.restoreMode`
-   不可用，需按各规则文件中注记回退。
-2. **qmllint 仅语法级**：Qt5 的 qmllint 不做语义/类型检查，qt-qml-review 的类型级问题
-   靠 Python linter + 深度分析 agent 兜底。
-3. **figma assets 中的项目占位 URI**：`import Qt.Fonts as Fonts`、`import Qt.Themes as Themes`
-   为演示工程自有模块占位，实际接入需替换为项目注册的 URI+版本。
-4. **docs 站点**：`mkdocs build --strict` 已于 2026-11-04 实测通过（Python 3.10.12 +
-   `requirements-docs.txt` 全部依赖，构建 2.3s、零警告零断链）；`mkdocs serve` 供本地
-   预览，未逐页人工检查渲染效果。
-5. **上游同步**：上游仍以 Qt6 为主演进；合并上游提交时，Qt6 相关改动需要人工评审后再带入。
-6. **许可与品牌**：保留上游 BSD-3-Clause 与 The Qt Company 版权头；Qt 商业许可条款提示语未动。
+1. **Qt version floor**: the rules and examples assume 5.15. Below 5.15,
+   `required property`, `createTemporaryObject`, `ListView.reuseItems`, inline
+   components and `Binding.restoreMode` are unavailable and must be rolled back per
+   the notes in the rule files.
+2. **qmllint is syntax-level only**: Qt 5's qmllint does no semantic/type checking;
+   qt-qml-review relies on the Python linter + deep-analysis agents for type-level
+   issues.
+3. **Project placeholder URIs in the figma assets**: `import Qt.Fonts as Fonts`,
+   `import Qt.Themes as Themes` are placeholders for the demo project's own modules;
+   replace them with the project's registered URI + version in real use.
+4. **Docs site**: `mkdocs build --strict` was verified on 2026-11-04 (Python 3.10.12 +
+   all of `requirements-docs.txt`; builds in ~2.3 s with zero warnings, see §14.4);
+   `mkdocs serve` for local preview. Pages were not eyeballed one by one.
+5. **Upstream sync**: upstream keeps evolving for Qt 6; when merging upstream commits,
+   Qt 6-related changes need human review before being brought in.
+6. **License and branding**: the upstream BSD-3-Clause license, The Qt Company
+   copyright headers and the Qt commercial licensing notice were preserved.
 
-## 11. 安装与使用（速览）
+## 11. Installation quick start
 
 ```bash
-# Claude Code（插件方式）
+# Claude Code (plugin route)
 /plugin marketplace add wuqingwei/agent-skills
 /plugin install qt5-development-skills
 
-# 或单 skill 拷贝
+# or copy a single skill
 cp -r skills/qt-qml-review ~/.claude/skills/qt-qml-review
-# 审查类 skill 建议同时安装 review agents：
+# review skills: also install the review agents
 cp agents/cpp-review-agent.md agents/qml-review-agent.md ~/.claude/agents/
 ```
 
-其余平台（Codex CLI / Copilot / Gemini / Cursor / Windsurf）见 `README.md` 安装章节。
+Other platforms (Codex CLI / Copilot / Gemini / Cursor / Windsurf): see the
+installation section of `README.md`.
 
-## 12. 快速变更文件索引
+## 12. Quick change index
 
-- 删除：`skills/qt-canvas2d/**`、`mcp/**`、`.mcp.json`、`docs/mcp/**`、
-  `skills/qt-qml/references/qmlpreview.md`、
+- Deleted: `skills/qt-canvas2d/**`, `mcp/**`, `.mcp.json`, `docs/mcp/**`,
+  `skills/qt-qml/references/qmlpreview.md`,
   `skills/qt-figma-component-generation/assets/qt-controls/TreeViewDelegate*.qml`
-- 全部重写：`skills/qt-cmake-project/**`（SKILL + 6 references）、
-  `skills/qt-qml-test-run/references/qt-quick-test-cmake.md`、
-  `skills/qt-qml-test/references/qt-quick-test-source-import.md`、
-  `README.md`、`docs/index.md`、`docs/getting-started.md`
-- 重点修改：两个 lint 脚本及其 references、qt-qml / qt-qml-test / qt-qml-profiler /
-  qt-figma-*/ 的 SKILL.md 与 references、全部 figma QML assets（87 个）、
-  平台变体（windsurf ×4、copilot ×1）、agents ×2、tests/qt-cpp-review、
-  插件与站点元数据（plugin/marketplace/gemini/mkdocs/gen_skills/CONTRIBUTING/docs/skills）
+- Fully rewritten: `skills/qt-cmake-project/**` (SKILL + 6 references),
+  `skills/qt-qml-test-run/references/qt-quick-test-cmake.md`,
+  `skills/qt-qml-test/references/qt-quick-test-source-import.md`,
+  `README.md`, `docs/index.md`, `docs/getting-started.md`
+- Heavily modified: both lint scripts and their references; the SKILL.md files and
+  references of qt-qml / qt-qml-test / qt-qml-profiler / qt-figma-*; all 87 figma QML
+  assets; the platform variants (windsurf ×4, copilot ×1); agents ×2;
+  tests/qt-cpp-review; plugin and site metadata (plugin/marketplace/gemini/mkdocs/
+  gen_skills/CONTRIBUTING/docs/skills)
 
-完整差异以 git 历史为准：`git log -1 --stat` 与 `git show`。
+The full diff is the git history: `git log --stat` and `git show`.
 
-## 13. 交接提交说明
+## 13. Handover commit notes
 
-- 本提交基于上游 `main`（fetch 后工作树叠加适配改动），单一提交包含全部移植内容，
-  便于 review 与回溯；如需拆分，可按 §12 的索引分批 cherry-pick。
-- 后续如需继续维护：新增/修改 skill 时沿用上游格式约定
-  （SKILL.md frontmatter、progressive disclosure、platforms/ 变体），并遵守本文 §3、§6 的 Qt5 基线规则。
+- The port sits on top of upstream `main` (history re-attached via fetch, working-tree
+  changes committed on top), as a single commit for easy review and rollback; split it
+  per the §12 index if you need to cherry-pick in batches.
+- Going forward: follow the upstream format conventions when adding or changing skills
+  (SKILL.md frontmatter, progressive disclosure, platforms/ variants) and the Qt 5
+  baseline rules of §3 and §6.
 
 ---
 
-## 14. 复审与修正（2026-11-04）
+## 14. Review and fixes (2026-11-04)
 
-对首版移植提交（`96c369a`）做了逐项复审，发现并修复 4 个问题：
+The first port commit (`96c369a`) was re-reviewed item by item; four issues were
+found and fixed.
 
-### 14.1 发现的问题
+### 14.1 Issues found
 
-| # | 严重度 | 问题 | 位置 |
+| # | Severity | Issue | Location |
 |---|---|---|---|
-| 1 | 高 | `qt-qml-test/references/qt-quick-test-rules.md` 规则编号 44 之后直接 46/47（已删的 3D 规则 45 留下断号），且残留 `## Qt Quick 3D source handling` 标题挂在 Unreachable-inner-items 规则头上；与 SKILL.md / pitfalls / pre-send-scan / copilot 中已改为 "rule 45/46" 的交叉引用错位 | `skills/qt-qml-test/references/qt-quick-test-rules.md` |
-| 2 | 高 | `qt5_add_resources` 三处按 **Qt 6 的 target-based 签名**（`qt_add_resources(target "name" PREFIX ... FILES ...)`）书写——Qt 5 只有 variable form `qt5_add_resources(<VAR> <.qrc> ...)`；`qt5_add_translations` 不存在（Qt 5 是 `qt5_add_translation` / `qt5_create_translation`）。出现在专门纠正此类 LLM 错误的文件里 | `qt-cmake-project/SKILL.md`、`references/common-mistakes.md`、`references/resources.md` |
-| 3 | 中 | QML linter IMP-2 误报：任何以 `Qt` 开头的 import 无版本即报错，但项目自有 URI（figma assets 的 `Qt.Fonts`/`Qt.Themes`，共 10 处）无版本 import 在 Qt5 合法（qmldir 未声明版本时） | `qt-qml-review/references/lint-scripts/qt_qml_lint.py` |
-| 4 | 低 | HANDOVER §5.5 首版声称"全部引用点同步"，实际 rules.md 漏改（即问题 1），文档描述与仓库状态不符 | `HANDOVER.md` |
+| 1 | High | `qt-qml-test/references/qt-quick-test-rules.md` numbering jumped 44 → 46/47 after the 3D rule (45) was deleted, and a leftover `## Qt Quick 3D source handling` heading sat on top of the Unreachable-inner-items rule; it was out of sync with the "rule 45/46" cross-references already used by SKILL.md / pitfalls / pre-send-scan / copilot | `skills/qt-qml-test/references/qt-quick-test-rules.md` |
+| 2 | High | `qt5_add_resources` was written with the **Qt 6 target-based signature** (`qt_add_resources(target "name" PREFIX ... FILES ...)`) in three places — Qt 5 only has the variable form `qt5_add_resources(<VAR> <.qrc> ...)`; `qt5_add_translations` does not exist (Qt 5 has `qt5_add_translation` / `qt5_create_translation`). Found inside the very file that exists to correct such LLM mistakes | `qt-cmake-project/SKILL.md`, `references/common-mistakes.md`, `references/resources.md` |
+| 3 | Medium | QML linter IMP-2 false positive: any unversioned import starting with `Qt` was flagged, but a project-local URI (the figma assets' `Qt.Fonts`/`Qt.Themes`, 10 occurrences) is legal unversioned in Qt 5 when its qmldir declares no versions | `qt-qml-review/references/lint-scripts/qt_qml_lint.py` |
+| 4 | Low | HANDOVER §5.5 claimed "all cross-references synced" but rules.md had in fact been missed (issue 1) — the document did not match the repository | `HANDOVER.md` |
 
-### 14.2 修复内容
+### 14.2 Fixes
 
-1. rules.md：`## Qt Quick 3D source handling` → `## Unreachable inner items`；
-   规则 `46. **Inner items…` → `45.`、`47. **Every test function…` → `46.`，
-   编号恢复 1–46 连续，与其他文件的交叉引用对齐。
-2. CMake 宏签名全部改为 Qt 5 真实形式：
-   - `SKILL.md` 硬规则 1：命令清单改为 `qt5_add_translation` / `qt5_create_translation`，
-     并显式标注 `qt5_add_resources` 为 variable form、`qt5_add_translations` 为 Qt 6 only；
-   - `common-mistakes.md` §1：RIGHT 示例改为 `.qrc` + AUTORCC 与
-     `qt5_add_resources(APP_RESOURCES images.qrc)` + `add_executable(... ${APP_RESOURCES})`，
-     新增 "Signature trap" 段落对比两种签名；
-   - `resources.md`：表格与示例改为 variable form，说明 Qt 5 无 FILES-only 资源形式。
-3. `qt_qml_lint.py`：新增 `KNOWN_QT_MODULES` 白名单（QtQuick/Controls/…/Qt.labs.* 等
-   官方模块），IMP-2 在 Tier A 分发中改为特判——模块命中白名单才 emit；
-   `qt-qml-review-checklist.md` IMP-2 说明补充白名单语义与项目自有 URI 的合法条件。
-4. HANDOVER 本节 + §5.5/§7.1 措辞修正。
+1. rules.md: `## Qt Quick 3D source handling` → `## Unreachable inner items`;
+   rules `46. **Inner items…` → `45.` and `47. **Every test function…` → `46.`, making
+   the numbering continuous 1–46 and aligned with the other files' cross-references.
+2. CMake macro signatures switched to the real Qt 5 forms:
+   - `SKILL.md` hard rule 1: the command list now reads `qt5_add_translation` /
+     `qt5_create_translation`, with `qt5_add_resources` explicitly marked as the
+     variable form and `qt5_add_translations` marked Qt 6 only;
+   - `common-mistakes.md` §1: the RIGHT example uses `.qrc` + AUTORCC and
+     `qt5_add_resources(APP_RESOURCES images.qrc)` + `add_executable(... ${APP_RESOURCES})`,
+     plus a new "Signature trap" paragraph comparing both signatures;
+   - `resources.md`: table and example switched to the variable form, noting Qt 5 has
+     no FILES-only resource form.
+3. `qt_qml_lint.py`: added the `KNOWN_QT_MODULES` allowlist (QtQuick/Controls/…/
+   Qt.labs.* and other Qt-shipped modules); IMP-2 is now special-cased in the Tier A
+   dispatch and only emits when the module is on the list; the
+   `qt-qml-review-checklist.md` IMP-2 entry documents the allowlist semantics and when
+   a project-local URI is legal.
+4. HANDOVER: this section, plus the §5.5 and §7.1 wording corrections.
 
-### 14.3 复审验证
+### 14.3 Review verification
 
-| 验证项 | 结果 |
+| Verification | Result |
 |---|---|
-| `tests/qt-cpp-review/run_tests.py` | 55/55 universal + 3/3 framework + `--diff` 全部通过（未受影响） |
-| IMP-2 白名单冒烟 | `import Qt.Fonts as Fonts` / `Qt.Themes` 不再报错；`import QtQuick`（无版本）仍正确报错；figma assets（Button.qml/SwitchStyle.qml）实跑零 IMP-2 误报 |
-| 规则编号连续性 | rules.md 1–46 连续（awk 扫描无 GAP），SKILL.md/copilot 同步 |
-| 内部引用完整性 | 全部 SKILL.md 相对链接指向存在的文件（脚本扫描） |
-| 被删文件残留引用 | `qmlpreview.md`/`qt-canvas2d`/`docs/mcp`/`TreeViewDelegate` 零残留（HANDOVER/README 的删除说明除外） |
-| figma assets Qt6-only API 复扫 | `IconPosition`/`popupType`/`palette:`/`Overlay.overlay` 等零命中；`required property` 等 5.15 特性确认在基线内 |
-| lint 脚本 `ast.parse` | 语法通过 |
+| `tests/qt-cpp-review/run_tests.py` | 55/55 universal + 3/3 framework + `--diff` all pass (unaffected) |
+| IMP-2 allowlist smoke | `import Qt.Fonts as Fonts` / `Qt.Themes` no longer flagged; unversioned `import QtQuick` still correctly flagged; figma assets (Button.qml/SwitchStyle.qml) produce zero IMP-2 false positives |
+| Rule numbering | rules.md continuous 1–46 (awk scan, no gaps); SKILL.md/copilot in sync |
+| Internal reference integrity | every relative link in every SKILL.md points at an existing file (script scan) |
+| References to deleted files | zero remaining mentions of `qmlpreview.md`/`qt-canvas2d`/`docs/mcp`/`TreeViewDelegate` (outside the intentional removal notes in HANDOVER/README) |
+| Qt 6-only API re-scan of the figma assets | zero hits for `IconPosition`/`popupType`/`palette:`/`Overlay.overlay` etc.; `required property` and other 5.15 features confirmed inside the baseline |
+| `ast.parse` on the lint scripts | syntax OK |
 
-### 14.4 遗留说明（未改动，已知即可）
+### 14.4 Docs-site verification (closed 2026-11-04)
 
-- ~~`mkdocs build --strict` 未能本地验证~~ —— 已于 2026-11-04 补验通过：Python 3.10.12
-  下安装 `requirements-docs.txt`（mkdocs 1.6.1 + material + gen-files 0.5.0 +
-  literate-nav 0.6.1 + pyyaml），`--strict` 构建成功（2.3s、零警告），产物含全部
-  12 个 skill 页面、无 qt-canvas2d/mcp 残留，`site/` 由 .gitignore 忽略。
-  系统缺 `python3-venv` 时可 `pip3 install --user -r requirements-docs.txt` 代替。
-  README 的 Python 要求已由 3.12+ 修正为实测的 3.10+。
-- `qt5_add_plugin` 的 `CLASS_NAME` 用法（`modular-architecture.md`）基于 Qt 5.14+ 签名，
-  个别项目的插件需求更复杂时以 Qt 5.15 文档为准。
-- figma assets 中 `Qt.Fonts`/`Qt.Themes` 等占位 URI 的说明见 §6、§10.3，维持原状。
+- `mkdocs build --strict` now verified locally: Python 3.10.12 + everything in
+  `requirements-docs.txt` (mkdocs 1.6.1, mkdocs-material, mkdocs-gen-files 0.5.0,
+  mkdocs-literate-nav 0.6.1, pyyaml) — builds clean in ~2.3 s with zero warnings and
+  zero broken links; the output contains all 12 skill pages with no qt-canvas2d/mcp
+  leftovers, and `site/` stays git-ignored. When `python3-venv` is missing,
+  `pip3 install --user -r requirements-docs.txt` works as a fallback. The README's
+  Python requirement was corrected from 3.12+ to the tested 3.10+.
+- The output shown by the build (a red "Warning from the Material for MkDocs team"
+  about MkDocs 2.0) is an upstream industry announcement from the theme, not a build
+  warning.
+
+### 14.5 Second review pass (2026-11-04, English conversion + full-diff sweep)
+
+A second full review of every commit since the fork point (`96c369a` → `b943176` →
+`88726eb`, 182 files, +1947/−6952 vs upstream) was performed, this time reading the
+files that had only been grepped before (CONTRIBUTING.md, both parser scripts,
+qt-quick-test-report-format.md, qt-quick-test-controls/properties/pitfalls.md, the
+qt-qml-docs windsurf variant, tools/, overrides/, gen_skills.py, the remaining
+sections of the figma and ui-design SKILL.md files). Findings, all fixed:
+
+1. `CONTRIBUTING.md`: the frontmatter example still read `qt-version: "6.x"` and
+   `author: qt-ai-skills` — corrected to `"5.15"` / `qt5skills`.
+2. `skills/qt-figma-token-extraction/SKILL.md` (Step 7 validation list): the example
+   `import QtQuick` was versionless, contradicting the same file's own Step 6 rule —
+   now `import QtQuick 2.15`.
+3. `skills/qt-qml-test/references/qt-quick-test-pitfalls.md`: the "Missing
+   `import QtTest`" symptom now names the versioned form `import QtTest 1.15`.
+4. `CONTRIBUTING.md` and `tools/README.md`: release-flow wording mentioned adding an
+   "MCP server" as possible new content — reduced to "(skill, etc.)" since this
+   repository carries no MCP servers.
+5. All remaining Chinese in the repository (HANDOVER.md, 3166 characters; README.md,
+   13 characters) was translated to English; this document is now fully English.
+
+Everything else re-checked clean: both parser scripts contain no Qt 6-specific code
+(they parse the format-level `.qtd`/JUnit outputs, which are identical on Qt 5.15);
+`overrides/` is upstream Qt branding kept on purpose; `gen_skills.py` and
+`docs/skills/concepts.md` carry no version hardcoding; the qt-qml-docs windsurf
+variant needed no changes.

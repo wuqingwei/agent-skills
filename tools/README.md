@@ -44,7 +44,7 @@ rewrites *any* semver-valued `version` field to the target, so a copy that has
 drifted out of sync is brought back into line rather than skipped.
 
 Release ordering: the version-bump change should land **after** the change
-that adds the new content (skill, MCP server, etc.) is merged, so the release
+that adds the new content (skill, etc.) is merged, so the release
 surface and the released artifacts agree.
 
 ### Cutting a maintained release branch

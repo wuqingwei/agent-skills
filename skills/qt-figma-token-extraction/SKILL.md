@@ -507,7 +507,7 @@ After generating all QML files, run a validation pass — do not skip any of the
 **QML validation:**
 - Check for any `// TODO:` placeholders — flag these to the user and ask how to resolve them
 - Verify every property type matches the `references/token-mapping.md` rules
-- Confirm `pragma Singleton` and `import QtQuick` are present in every file
+- Confirm `pragma Singleton` and `import QtQuick 2.15` are present in every file
 - Check that no values are hardcoded that should come from the token file
 
 **CMakeLists.txt — mandatory update:**

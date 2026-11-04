@@ -18,7 +18,7 @@ removed:
   documentation only)
 - `qml-live-preview-mcp` — removed (requires Qt 6.12 or later)
 
-完整改动记录见 **[HANDOVER.md](HANDOVER.md)**（Qt5 适配交接文档）。
+Full change record: see **[HANDOVER.md](HANDOVER.md)** (Qt 5 port handover document).
 
 Skills have been tested with frontier LLMs from the Claude,
 Gemini, and GPT model families.
