@@ -3,7 +3,7 @@ name: qt-qml-review
 description: >-
   Invoke when the user asks to review, check, audit, or look
   over Qt5 QML code -- or suggest before committing. Runs
-  deterministic linting (45+ rules) then deep-analysis agents
+  deterministic linting (46+ rules) then deep-analysis agents
   (scaled to the size of the change) covering
   bindings, layout, loaders, delegates, states, and performance.
   Optionally invokes system qmllint for syntax-level checks.
@@ -84,7 +84,7 @@ Python 3.7+, no dependencies. If Python is unavailable, warn and
 continue (in diff scope, take the file list from
 `git diff --stat <range>`). The linter is authoritative; do not
 second-guess its output. Rule families: IMP, ORD, BND, LAY, LDR, DEL,
-STA, IMG, PRF, STY, SIG, ERR, JS (48+ checks). Exit code 1 simply
+STA, IMG, PRF, STY, SIG, ERR, JS (46+ checks). Exit code 1 simply
 means findings exist; 2 means a usage or git error.
 
 `--qmllint` also runs qmllint and merges its warnings as `QL` rows;

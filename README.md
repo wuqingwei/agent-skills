@@ -45,7 +45,7 @@ for the full cross-platform story.
 | Skill | Type | Description |
 |-------|------|-------------|
 | `qt-cpp-review` | Review | Deterministic linting + deep analysis for Qt 5 C++ code (inline for small scopes, parallel shard agents above about 2,500 lines). Covers model rule compliance, memory ownership, thread safety, correctness, error handling, and performance. |
-| `qt-qml-review` | Review | Deterministic QML linting (45+ rules) + deep analysis (inline for small scopes, parallel shard agents above about 1,500 lines) for bindings, layout, loaders, delegates, states, and performance. |
+| `qt-qml-review` | Review | Deterministic QML linting (46+ rules) + deep analysis (inline for small scopes, parallel shard agents above about 1,500 lines) for bindings, layout, loaders, delegates, states, and performance. |
 | `qt-qml` | Conceptual | QML best practices for writing, reviewing, fixing, and refactoring. Corrects systematic LLM pre-training biases around versioned imports, bindings, scoping, modules, JS interop, and types. |
 | `qt-ui-design` | Conceptual | UI design and audit for Qt/QML, web, and embedded (MPU/MCU) targets. Covers screen layout, navigation, and UX review with platform-aware defaults for geometry, viewing distance, input, and locale. |
 | `qt-qml-docs` | Process | Generates Markdown reference documentation for QML components and applications from .qml source files. |
@@ -109,7 +109,7 @@ Codex CLI support natively:
 name: qt-qml-review
 description: >-
   Reviews QML source files for correctness, performance, and
-  maintainability. Deterministic linting (45+ rules) plus
+  maintainability. Deterministic linting (46+ rules) plus
   deep analysis (parallel shard agents for large scopes) for
   bindings, layout, loaders, delegates, states, and performance.
 license: LicenseRef-Qt-Commercial OR BSD-3-Clause

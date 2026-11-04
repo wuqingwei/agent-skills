@@ -139,10 +139,10 @@ nothing, say so in one line.
 - **`restoreEntryValues` surprises.** `PropertyChanges` defaults to
   `restoreEntryValues: true`, so values written imperatively while in
   a state revert on exit. Flag code that expects them to persist.
-- **`Binding` deactivation surprises.** Qt 5.15+ has `restoreMode`; on
+- **`Binding` deactivation surprises.** Qt 5.14+ has `restoreMode`; on
   older Qt 5 versions a deactivated `Binding { when: ... }` simply
   removes the binding and the property keeps the last written value.
-  Do not rely on the default -- set `restoreMode` explicitly (5.15+)
+  Do not rely on the default -- set `restoreMode` explicitly (5.14+)
   or re-create the binding manually.
 - **Component-level `states` in a reusable type** that the linter
   did not flag (STA-3 only fires when `required property` is present).

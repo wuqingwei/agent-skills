@@ -48,10 +48,21 @@ Goals of this repository:
 | Build system | CMake ≥ 3.5 (`find_package(Qt5 ...)` + `AUTOMOC/AUTOUIC/AUTORCC` + `qt5_*` macros + `.qrc`) |
 | Skills kept | 12 (upstream has 13; `qt-canvas2d` was removed) |
 
-`required property`, `createTemporaryObject`, `ListView.reuseItems` and inline
-components (`component Foo: Bar {}`) are all **introduced in Qt 5.15** and are allowed
-in this repository's examples and rules. For targets older than 5.15 they must be
-replaced with older idioms such as `model.<role>` access (the rule files note this).
+Feature availability used by this repository's examples and rules, by introducing
+version — check this table before rolling anything back for a pre-5.15 target:
+
+| Feature | Introduced in |
+|---|---|
+| `TestCase.createTemporaryObject()` / `createTemporaryQmlObject` / `createTemporaryItem` | **Qt 5.9** |
+| `Binding.restoreMode` | **Qt 5.14** |
+| `required property` | Qt 5.15 |
+| inline components (`component Foo: Bar {}`) | Qt 5.15 |
+| `ListView.reuseItems` | Qt 5.15 |
+
+For targets older than the respective version, replace with older idioms such as
+`model.<role>` access or manual `Component.onCompleted` cleanup (the rule files
+note this). Do **not** treat 5.15 as the floor for every feature —
+`createTemporaryObject` has been available since 5.9 and `restoreMode` since 5.14.
 
 ## 4. Removed content (not applicable to Qt 5)
 
@@ -65,6 +76,7 @@ replaced with older idioms such as `model.<role>` access (the rule files note th
 | `skills/qt-qml/references/qmlpreview.md` | Usage reference for the live-preview MCP (Qt 6.12+); the "scan for a `run_qmlPreview` tool on every invocation" logic was also removed from the qt-qml SKILL.md |
 | `skills/qt-figma-component-generation/assets/qt-controls/TreeViewDelegate.qml` + `TreeViewDelegateStyle.qml` | `TreeView`/`TreeViewDelegate` belong to Qt Quick Controls **Qt 6.4+**; the Qt 5 Controls 1 TreeView is a different, deprecated API |
 | MCP Tools nav section in `mkdocs.yml` | Followed the removal of docs/mcp |
+| `docs/images/codex-mcp-setup.webp` | Orphaned screenshot of the Codex MCP setup; unreferenced after docs/mcp was removed (found in the third review pass, §14.6) |
 
 ## 5. Per-skill change details
 
@@ -127,8 +139,10 @@ replaced with older idioms such as `model.<role>` access (the rule files note th
 - `references/agent-rules.md`: retitled and re-semantics for Qt 5; removed the
   missing-`pragma ComponentBehavior: Bound` check (a Qt 6.5+ feature); the
   context-property advice now points at `qmlRegisterSingletonType`; the
-  `Binding.restoreMode` note now describes Qt 5 semantics (introduced in 5.15).
-- `SKILL.md`: description says Qt 5, rule count 48+ → 45+, qmllint repositioned as a
+  `Binding.restoreMode` note now describes Qt 5 semantics (introduced in
+  **Qt 5.14**, not 5.15 — corrected in review, see §14.6).
+- `SKILL.md`: description says Qt 5, rule count 48+ → 46+ (after the IMP-7
+  re-add, see §7.1), qmllint repositioned as a
   "syntax-level checker" (Qt 5 qmllint has no semantic analysis and no `--json`),
   discovery paths switched to Qt 5 kits (`~/Qt*`, `clang_64`, `msvc2019_64`,
   `mingw81_64`), and the example report row reads `IMP-2 Unversioned import`.
@@ -260,7 +274,7 @@ Features Qt 5.15 already supports (`required property`, inline components,
 
 ## 7. Lint script change details
 
-### 7.1 qt_qml_lint.py (QML linter, 45+ rules)
+### 7.1 qt_qml_lint.py (QML linter, 46+ rules)
 
 - **IMP-2 inverted**: "versioned import" error (Qt 6) → "unversioned Qt module
   import" error (`import QtQuick` fires; `import "qrc:/..."` and `import ..` do not).
@@ -269,9 +283,15 @@ Features Qt 5.15 already supports (`required property`, inline components,
   `Qt` (e.g. the figma assets' `Qt.Fonts`/`Qt.Themes`) are legal unversioned in Qt 5
   and are not flagged (see §14).
 - Qt 6-only rules removed: IMP-1 (redundant QtQuick.Window), IMP-3 (Controls.Basic
-  style qualification), IMP-7 (QtGraphicalEffects import — the correct module in
-  Qt 5), STA-1 (PropertyChanges `target:` deprecation — the only correct form in
-  Qt 5).
+  style qualification), STA-1 (PropertyChanges `target:` deprecation — the only
+  correct form in Qt 5).
+- **IMP-7 inverted, not removed**: upstream's IMP-7 flagged
+  `QtGraphicalEffects`/`Qt5Compat.GraphicalEffects` imports in a Qt 6 project and
+  pointed at `MultiEffect`. For Qt 5 the direction flips: the linter now flags
+  `import QtQuick.Effects`, any `import Qt5Compat.*`, and any `MultiEffect` **use**
+  (both the import line and the usage emit IMP-7), pointing at
+  `import QtGraphicalEffects 1.15` instead. Re-added in review after the initial
+  port had dropped the rule entirely, leaving Qt 6 effects unflagged (see §14.6).
 - Message fixes: BND-1/DEL-1 lost their qmlsc references; the IMP-4 note lost
   `qmlformat --sort-imports` (a Qt 6 tool).
 - **qmllint integration rewritten**: Qt 5's qmllint is a syntax-level checker (no
@@ -329,10 +349,12 @@ The remaining DEP rules (QScopedPointer→unique_ptr, foreach→range-for, qMin�
 
 ## 10. Known limitations and caveats
 
-1. **Qt version floor**: the rules and examples assume 5.15. Below 5.15,
-   `required property`, `createTemporaryObject`, `ListView.reuseItems`, inline
-   components and `Binding.restoreMode` are unavailable and must be rolled back per
-   the notes in the rule files.
+1. **Qt version floor**: the rules and examples assume 5.15 as the overall baseline,
+   but feature floors differ — see the table in §3. On Qt 5.12–5.14,
+   `required property`, inline components and `ListView.reuseItems` (all 5.15) are
+   unavailable, while `createTemporaryObject` (5.9) and `Binding.restoreMode` (5.14)
+   **are** available and must not be rolled back unnecessarily. Consult the §3 table
+   before downgrading any idiom.
 2. **qmllint is syntax-level only**: Qt 5's qmllint does no semantic/type checking;
    qt-qml-review relies on the Python linter + deep-analysis agents for type-level
    issues.
@@ -346,6 +368,21 @@ The remaining DEP rules (QScopedPointer→unique_ptr, foreach→range-for, qMin�
    Qt 6-related changes need human review before being brought in.
 6. **License and branding**: the upstream BSD-3-Clause license, The Qt Company
    copyright headers and the Qt commercial licensing notice were preserved.
+
+### Intentional design trade-offs (recorded, not gaps)
+
+- **No qmake skill.** Upstream ships none either — only `qt-cmake-project` — and
+  that skill's hard rules explicitly forbid generating `.pro` files. qmake users
+  are out of scope by design.
+- **No Trae/ZCode-specific install section in the README.** The install chapter
+  covers Claude Code, Codex CLI, Copilot, VSCode agents, Gemini and
+  Cursor/Windsurf (as upstream did); tools that read `~/.agents/skills/` or
+  `.agents/skills/` are covered by the generic note in the Codex section.
+- **No MCP servers, and that is final.** `mcp/`, `.mcp.json` and `docs/mcp/` were
+  removed with the port (§4), and the leftover "MCP server" wording was scrubbed
+  from CONTRIBUTING.md and tools/README.md in `ba2a14d`. A Qt 5-specific MCP
+  surface would have to be built and hosted before any of this content could
+  come back.
 
 ## 11. Installation quick start
 
@@ -478,3 +515,34 @@ Everything else re-checked clean: both parser scripts contain no Qt 6-specific c
 `overrides/` is upstream Qt branding kept on purpose; `gen_skills.py` and
 `docs/skills/concepts.md` carry no version hardcoding; the qt-qml-docs windsurf
 variant needed no changes.
+
+### 14.6 Third review pass (2026-11-04, external findings)
+
+Three externally reported issues, all confirmed real and fixed, plus one more of
+the same kind found while fixing them:
+
+1. **Wrong version claims in HANDOVER.** §3 said `createTemporaryObject` was
+   introduced in Qt 5.15 and §5.3/§10.1 treated `Binding.restoreMode` as 5.15;
+   the real floors are **Qt 5.9** and **Qt 5.14** respectively. Anyone using
+   HANDOVER as the rollback authority for a 5.12–5.14 target would have removed
+   APIs that work fine there. §3 is now a per-feature availability table, §10.1
+   points at it, and §5.3 states 5.14. The same restoreMode error also lived in
+   `skills/qt-qml-review/references/agent-rules.md` ("Qt 5.15+ has restoreMode")
+   and was corrected to 5.14 there too.
+2. **IMP-7 was missing entirely.** The initial port dropped upstream's IMP-7
+   (which flags `QtGraphicalEffects` in Qt 6) without adding the Qt 5-side
+   counterpart, so `import QtQuick.Effects`, `import Qt5Compat.*` and
+   `MultiEffect` uses went completely unflagged by the linter — only a prose note
+   in the checklist mentioned them. IMP-7 was re-added in inverted form: both the
+   import line and any `MultiEffect` usage emit IMP-7 pointing at
+   `QtGraphicalEffects 1.15`. Verified by smoke test: the bad sample
+   (QtQuick.Effects + MultiEffect) reports IMP-7 on both lines; the good sample
+   (QtGraphicalEffects 1.15 + DropShadow) reports nothing.
+3. **Rule count still inconsistent.** The qt-qml-review SKILL.md frontmatter
+   said "45+ rules" while its body still carried upstream's "(48+ checks)".
+   Both now read **46+** (the re-added IMP-7 brings the count up), and HANDOVER
+   §5.3/§7.1 were updated to match.
+
+The remaining observations from the same review were confirmed as intentional
+design trade-offs rather than defects, and are now recorded in §10 (no qmake
+skill, no per-tool install sections beyond upstream's set, no MCP servers).

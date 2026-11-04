@@ -41,10 +41,18 @@ explicit QML imports instead.
 ### IMP-6: Duplicate imports
 The same module imported more than once. Remove the duplicate.
 
+### IMP-7: Qt 6-only effects/compat imports
+`import QtQuick.Effects` (the `MultiEffect` module, Qt 6.5+), any
+`import Qt5Compat.*` module, and any `MultiEffect` use do not exist in
+Qt 5. Both the import line and the usage are flagged. Replace with the
+Qt 5 equivalents: `import QtGraphicalEffects 1.15` and its effect types
+(`DropShadow`, `GaussianBlur`, `Desaturate`, …), or plain QtQuick
+primitives.
+
 ### Note: QtGraphicalEffects is correct in Qt 5
 `import QtGraphicalEffects 1.15` is the standard Qt 5 way to get
-blur, glow, desaturation and similar effects. (`MultiEffect` and
-`QtQuick.Effects` are Qt 6.5+ and do not exist in Qt 5.)
+blur, glow, desaturation and similar effects — the inverse of
+upstream's IMP-7, which flagged this module in a Qt 6 project.
 
 ---
 

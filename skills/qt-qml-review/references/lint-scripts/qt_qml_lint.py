@@ -506,6 +506,19 @@ RE_IMP_QT_INCLUDE = re.compile(r'\bQt\.include\s*\(')
 # IMP-6: Duplicate import detection (post-scan)
 RE_IMPORT_LINE = re.compile(r'^\s*import\s+(.+)')
 
+# IMP-7: Qt 6-only effects/compat modules. `QtQuick.Effects`
+# (MultiEffect, Qt 6.5+) and the whole `Qt5Compat.*` namespace do not
+# exist in Qt 5. The Qt 5 equivalents are the `QtGraphicalEffects`
+# module (DropShadow, GaussianBlur, Desaturate, ...) and plain
+# QtQuick primitives. Both the import line and any `MultiEffect` use
+# are flagged. (Upstream's IMP-7 flagged the *reverse* -- QtGraphicalEffects
+# in a Qt 6 project -- and was removed with the port; this is the
+# Qt 5-side counterpart.)
+RE_IMP_QT6_EFFECTS = re.compile(
+    r'^\s*import\s+(QtQuick\.Effects|Qt5Compat\.[\w.]*)\b'
+)
+RE_IMP_MULTI_EFFECT = re.compile(r'\bMultiEffect\b')
+
 # --- BND (Bindings & Properties) ---
 
 # BND-1: property var usage. Research: qmllint warns via
@@ -785,6 +798,12 @@ RULES_SIMPLE: "List[Rule]" = [
          "(e.g. import QtQuick 2.15)"),
     Rule("IMP-5", RE_IMP_QT_INCLUDE,
          "Qt.include() is deprecated -- use ES module imports or explicit QML imports"),
+    Rule("IMP-7", RE_IMP_QT6_EFFECTS,
+         "Qt 6-only effects/compat module import -- use "
+         "QtGraphicalEffects 1.15 in Qt 5"),
+    Rule("IMP-7", RE_IMP_MULTI_EFFECT,
+         "MultiEffect is Qt 6.5+ (QtQuick.Effects) -- use "
+         "QtGraphicalEffects (DropShadow, GaussianBlur, ...) in Qt 5"),
 
     # --- BND ---
     Rule("BND-1", RE_BND_PROP_VAR,
