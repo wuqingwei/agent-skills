@@ -138,6 +138,8 @@ Qt 6 专属写法（`qt_add_qml_module`、无版本 import、`pragma ComponentBe
   （2）其余 → 相对路径 `import "../..."`；并说明 qrc-only 资源不能被磁盘测试相对导入的边界。
 - 原"Qt Quick 3D 源跳过"规则（rule 45）删除，rule 46/47 重编号为 45/46（共 46 条），
   全部引用点（SKILL.md、rules、pitfalls、pre-send-scan、copilot 变体）同步。
+  （首版提交中 `qt-quick-test-rules.md` 的条目编号漏改且残留 "Qt Quick 3D source
+  handling" 标题，已于复审时修复，见 §14。）
 - `QT_QML_SINGLETON_TYPE TRUE`（Qt6 CMake 属性）全部替换为 qmldir `singleton` 行 /
   `qmlRegisterSingletonType` 语义。
 - `references/qt-quick-test-template.md`：模板 import 全部版本化；Variant 7 的 URL 表改为
@@ -223,6 +225,9 @@ Qt 6 专属写法（`qt_add_qml_module`、无版本 import、`pragma ComponentBe
 
 - **IMP-2 反转**：原"版本号 import 报错"（Qt6）→ 现"无版本 Qt 模块 import 报错"
   （`import QtQuick` 命中，`import "qrc:/..."`、`import ..` 不命中）。
+  复审后改为**白名单语义**：只对内置的 Qt 官方模块清单（KNOWN_QT_MODULES）要求版本；
+  以 `Qt` 开头的项目自有 URI（如 figma assets 的 `Qt.Fonts`/`Qt.Themes`）无版本
+  import 在 Qt5 是合法写法，不报（见 §14）。
 - 删除 Qt6 专属规则：IMP-1（QtQuick.Window 冗余）、IMP-3（Controls.Basic 样式限定）、
   IMP-7（QtGraphicalEffects 导入报错——Qt5 中它是正确模块）、STA-1（PropertyChanges `target:`
   弃用警告——Qt5 中它是唯一正确形式）。
@@ -328,3 +333,54 @@ cp agents/cpp-review-agent.md agents/qml-review-agent.md ~/.claude/agents/
   便于 review 与回溯；如需拆分，可按 §12 的索引分批 cherry-pick。
 - 后续如需继续维护：新增/修改 skill 时沿用上游格式约定
   （SKILL.md frontmatter、progressive disclosure、platforms/ 变体），并遵守本文 §3、§6 的 Qt5 基线规则。
+
+---
+
+## 14. 复审与修正（2026-11-04）
+
+对首版移植提交（`96c369a`）做了逐项复审，发现并修复 4 个问题：
+
+### 14.1 发现的问题
+
+| # | 严重度 | 问题 | 位置 |
+|---|---|---|---|
+| 1 | 高 | `qt-qml-test/references/qt-quick-test-rules.md` 规则编号 44 之后直接 46/47（已删的 3D 规则 45 留下断号），且残留 `## Qt Quick 3D source handling` 标题挂在 Unreachable-inner-items 规则头上；与 SKILL.md / pitfalls / pre-send-scan / copilot 中已改为 "rule 45/46" 的交叉引用错位 | `skills/qt-qml-test/references/qt-quick-test-rules.md` |
+| 2 | 高 | `qt5_add_resources` 三处按 **Qt 6 的 target-based 签名**（`qt_add_resources(target "name" PREFIX ... FILES ...)`）书写——Qt 5 只有 variable form `qt5_add_resources(<VAR> <.qrc> ...)`；`qt5_add_translations` 不存在（Qt 5 是 `qt5_add_translation` / `qt5_create_translation`）。出现在专门纠正此类 LLM 错误的文件里 | `qt-cmake-project/SKILL.md`、`references/common-mistakes.md`、`references/resources.md` |
+| 3 | 中 | QML linter IMP-2 误报：任何以 `Qt` 开头的 import 无版本即报错，但项目自有 URI（figma assets 的 `Qt.Fonts`/`Qt.Themes`，共 10 处）无版本 import 在 Qt5 合法（qmldir 未声明版本时） | `qt-qml-review/references/lint-scripts/qt_qml_lint.py` |
+| 4 | 低 | HANDOVER §5.5 首版声称"全部引用点同步"，实际 rules.md 漏改（即问题 1），文档描述与仓库状态不符 | `HANDOVER.md` |
+
+### 14.2 修复内容
+
+1. rules.md：`## Qt Quick 3D source handling` → `## Unreachable inner items`；
+   规则 `46. **Inner items…` → `45.`、`47. **Every test function…` → `46.`，
+   编号恢复 1–46 连续，与其他文件的交叉引用对齐。
+2. CMake 宏签名全部改为 Qt 5 真实形式：
+   - `SKILL.md` 硬规则 1：命令清单改为 `qt5_add_translation` / `qt5_create_translation`，
+     并显式标注 `qt5_add_resources` 为 variable form、`qt5_add_translations` 为 Qt 6 only；
+   - `common-mistakes.md` §1：RIGHT 示例改为 `.qrc` + AUTORCC 与
+     `qt5_add_resources(APP_RESOURCES images.qrc)` + `add_executable(... ${APP_RESOURCES})`，
+     新增 "Signature trap" 段落对比两种签名；
+   - `resources.md`：表格与示例改为 variable form，说明 Qt 5 无 FILES-only 资源形式。
+3. `qt_qml_lint.py`：新增 `KNOWN_QT_MODULES` 白名单（QtQuick/Controls/…/Qt.labs.* 等
+   官方模块），IMP-2 在 Tier A 分发中改为特判——模块命中白名单才 emit；
+   `qt-qml-review-checklist.md` IMP-2 说明补充白名单语义与项目自有 URI 的合法条件。
+4. HANDOVER 本节 + §5.5/§7.1 措辞修正。
+
+### 14.3 复审验证
+
+| 验证项 | 结果 |
+|---|---|
+| `tests/qt-cpp-review/run_tests.py` | 55/55 universal + 3/3 framework + `--diff` 全部通过（未受影响） |
+| IMP-2 白名单冒烟 | `import Qt.Fonts as Fonts` / `Qt.Themes` 不再报错；`import QtQuick`（无版本）仍正确报错；figma assets（Button.qml/SwitchStyle.qml）实跑零 IMP-2 误报 |
+| 规则编号连续性 | rules.md 1–46 连续（awk 扫描无 GAP），SKILL.md/copilot 同步 |
+| 内部引用完整性 | 全部 SKILL.md 相对链接指向存在的文件（脚本扫描） |
+| 被删文件残留引用 | `qmlpreview.md`/`qt-canvas2d`/`docs/mcp`/`TreeViewDelegate` 零残留（HANDOVER/README 的删除说明除外） |
+| figma assets Qt6-only API 复扫 | `IconPosition`/`popupType`/`palette:`/`Overlay.overlay` 等零命中；`required property` 等 5.15 特性确认在基线内 |
+| lint 脚本 `ast.parse` | 语法通过 |
+
+### 14.4 遗留说明（未改动，已知即可）
+
+- `mkdocs build --strict` 仍未能本地验证（环境缺 Python 依赖），发布文档站前建议跑一次。
+- `qt5_add_plugin` 的 `CLASS_NAME` 用法（`modular-architecture.md`）基于 Qt 5.14+ 签名，
+  个别项目的插件需求更复杂时以 Qt 5.15 文档为准。
+- figma assets 中 `Qt.Fonts`/`Qt.Themes` 等占位 URI 的说明见 §6、§10.3，维持原状。

@@ -21,9 +21,11 @@ qt_add_resources(myapp "res" FILES logo.png)
 ```cmake
 # RIGHT
 find_package(Qt5 5.15 REQUIRED COMPONENTS Quick)
-add_executable(myapp main.cpp qml.qrc)
+add_executable(myapp main.cpp qml.qrc)   # .qrc + CMAKE_AUTORCC ON
 target_link_libraries(myapp PRIVATE Qt5::Quick)
-qt5_add_resources(myapp "res" PREFIX "/" FILES logo.png)  # for explicit resources
+# explicit rcc handling (Qt 5 variable form — note: NOT target-based):
+qt5_add_resources(APP_RESOURCES images.qrc)
+add_executable(myapp main.cpp ${APP_RESOURCES})
 ```
 
 **Why:** Qt 5 has no `qt_standard_project_setup()`, no `qt_add_executable()`,
@@ -32,6 +34,14 @@ and no unprefixed `qt_*` command form. The `qt5_*`-prefixed macros
 (`qt5_add_resources`, `qt5_add_plugin`, `qt5_add_translation`, …) are the
 correct Qt 5 spelling. This is the inverse of the Qt 6 convention — do not
 "modernise" a Qt 5 project by dropping the `5`.
+
+**Signature trap:** `qt5_add_resources` in Qt 5 is **variable-based** —
+`qt5_add_resources(<VAR> <.qrc file> ...)` generates source files into
+`<VAR>`, which you then add to the target's sources. The Qt 6 form
+`qt_add_resources(target "name" PREFIX ... FILES ...)` (target-based,
+FILES without a `.qrc`) does **not** exist in Qt 5. Likewise translations:
+Qt 5 has `qt5_create_translation` / `qt5_add_translation` (both
+variable-based); `qt_add_translations` is Qt 6 only.
 
 ## 2. Missing AUTOMOC / AUTOUIC / AUTORCC
 

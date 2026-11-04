@@ -9,7 +9,11 @@ to a Qt 5 CMake project. Qt 5 has one mechanism: the Qt resource system
 | Approach | When to use |
 |----------|-------------|
 | `.qrc` file in target sources + `CMAKE_AUTORCC ON` | The normal case. Hand-written, versioned with the code. |
-| `qt5_add_resources(target "name" PREFIX ... FILES ...)` | Generated resources assembled from many files without hand-editing XML. |
+| `qt5_add_resources(<VAR> <.qrc> ...)` (variable form) | Explicit rcc handling with options (e.g. `-no-compress`), or when you want the generated file list in a variable. |
+
+Note: both take a **`.qrc` file** as input. Qt 5 has no target-based /
+FILES-only resource form — `qt_add_resources(target "name" PREFIX ...
+FILES ...)` is Qt 6 API.
 
 Do not do both for the same files — the resource gets compiled twice.
 
@@ -23,13 +27,9 @@ add_executable(myapp
 ```
 
 ```cmake
-# or, generated:
-qt5_add_resources(myapp "myapp_images"
-    PREFIX "/images"
-    FILES
-        resources/images/logo.png
-        resources/images/background.jpg
-)
+# or, explicit (variable form):
+qt5_add_resources(APP_RESOURCES qml.qrc)
+add_executable(myapp main.cpp ${APP_RESOURCES})
 ```
 
 ## Resource layout conventions

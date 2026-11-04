@@ -471,9 +471,32 @@ RE_COMMENT_LINE = re.compile(r"^\s*(//|/?\*)")
 # Research: Qt 5 requires explicit major.minor versions on every module
 # import ("import QtQuick" alone fails to resolve). Versionless imports
 # are a Qt 6 relaxation that breaks at load time on Qt 5.
+# Only Qt-shipped modules are checked: a project's own module URI
+# (anything not in KNOWN_QT_MODULES) may legally be imported without a
+# version when its qmldir declares no versioned type entries, so
+# flagging those would be a false positive (e.g. `import Qt.Fonts as
+# Fonts` in a vendored design system).
 RE_IMP_UNVERSIONED = re.compile(
     r'^\s*import\s+(Qt[\w.]*)\s*(\s+as\s+\w+)?\s*$', re.M
 )
+
+# Qt 5 modules whose imports must carry a version. Anything else that
+# happens to start with "Qt" is treated as a project-local URI.
+KNOWN_QT_MODULES = frozenset({
+    "QtQml", "QtQml.Models", "QtQml.WorkerScript",
+    "QtQuick", "QtQuick.Window", "QtQuick.Controls",
+    "QtQuick.Controls.Material", "QtQuick.Controls.Universal",
+    "QtQuick.Controls.Fusion", "QtQuick.Controls.Imagine",
+    "QtQuick.Templates", "QtQuick.Layouts", "QtQuick.Shapes",
+    "QtQuick.Dialogs", "QtQuick.Particles", "QtQuick.LocalStorage",
+    "QtQuick.VirtualKeyboard",
+    "QtGraphicalEffects", "QtTest", "QtMultimedia",
+    "QtPositioning", "QtLocation", "QtCharts", "QtBluetooth",
+    "QtSensors", "QtNfc", "QtWebSockets", "QtWebChannel",
+    "Qt.labs.settings", "Qt.labs.platform", "Qt.labs.folderlistmodel",
+    "Qt.labs.qmlmodels", "Qt.labs.animation", "Qt.labs.calendar",
+    "Qt.labs.sharedimage", "Qt.labs.wavefrontmesh",
+})
 
 # IMP-5: Qt.include() is deprecated since Qt 5.14.
 # Research: Removed from the documentation; use explicit imports or
@@ -887,6 +910,17 @@ def _check_line_rules(
                 if not RE_STY_CAMELCASE.match(id_val):
                     emit(lineno, "STY-6",
                          f"id '{id_val}' -- use lowerCamelCase for QML ids")
+            continue
+        # IMP-2 special handling: only Qt-shipped modules require a
+        # version; project-local URIs starting with "Qt" are legal
+        # unversioned and must not be flagged.
+        if rule.id == "IMP-2":
+            m = RE_IMP_UNVERSIONED.match(stripped)
+            if m and m.group(1) in KNOWN_QT_MODULES:
+                emit(lineno, "IMP-2",
+                     f"Unversioned import of Qt module {m.group(1)} -- "
+                     "Qt 5 requires explicit version numbers "
+                     "(e.g. import QtQuick 2.15)")
             continue
         emit(lineno, rule.id, rule.message)
 

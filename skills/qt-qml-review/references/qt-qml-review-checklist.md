@@ -14,11 +14,18 @@ when a mitigation needs more background than the message gives.
 ## 1. Imports
 
 ### IMP-2: Unversioned imports
-Qt 5 requires explicit major.minor versions on every module import.
-`import QtQuick` alone fails to resolve ("module not installed").
-Always write `import QtQuick 2.15`, `import QtQuick.Controls 2.15`,
-`import MyModule 1.0`, etc. Versionless imports are a Qt 6 relaxation.
+Qt 5 requires explicit major.minor versions on every Qt-shipped module
+import. `import QtQuick` alone fails to resolve ("module not installed").
+Always write `import QtQuick 2.15`, `import QtQuick.Controls 2.15`, etc.
+Versionless imports are a Qt 6 relaxation.
 (String imports such as `import "qrc:/..."` never take versions.)
+
+The linter only flags Qt-shipped modules (a built-in known-modules
+list). A **project-local module URI** may legally be imported without a
+version when its `qmldir` declares no versioned type entries — even if
+the URI starts with `Qt` (e.g. a vendored `Qt.Fonts`). When the qmldir
+*does* declare versions (`singleton Theme 1.0 Theme.qml`), import it
+with a covered version (`import MyModule 1.0`).
 
 ### IMP-4: Import ordering
 Order imports: Qt modules first, then third-party, then local C++,

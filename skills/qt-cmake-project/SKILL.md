@@ -86,7 +86,11 @@ They exist because mainstream LLMs get them wrong by default — most models
 were trained on Qt 6 material and emit Qt 6 commands for Qt 5 projects.
 
 1. **Use the Qt 5 CMake API, not Qt 6.** `find_package(Qt5 ...)`, `add_executable`,
-   `add_library`, `qt5_add_resources`, `qt5_add_plugin`, `qt5_add_translations`.
+   `add_library`, `qt5_add_resources` (variable form:
+   `qt5_add_resources(<VAR> <.qrc> ...)` — **not** the Qt 6
+   `qt_add_resources(target "name" PREFIX ... FILES ...)` target form),
+   `qt5_add_plugin`, `qt5_add_translation` / `qt5_create_translation`
+   (there is no `qt5_add_translations` — that plural form is Qt 6 only).
    Never `qt_add_executable`, `qt_add_library`, `qt_add_qml_module`,
    `qt_standard_project_setup`, or the `qt6_*`/unprefixed `qt_*` forms — none of
    them exist in Qt 5. Conversely, in a Qt 5 project the `qt5_*`-prefixed macros

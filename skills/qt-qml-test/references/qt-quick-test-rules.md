@@ -257,9 +257,9 @@ Apply every rule relevant to the component under test.
     }
     ```
 
-## Qt Quick 3D source handling
+## Unreachable inner items
 
-46. **Inner items the test would meaningfully exercise must
+45. **Inner items the test would meaningfully exercise must
     declare `objectName`; items with only an `id` are
     unreachable from a sibling test file.** QML `id`s are
     scoped to the declaring document — `findChild` and every
@@ -294,7 +294,7 @@ Apply every rule relevant to the component under test.
 
 ## No-op test functions
 
-47. **Every test function must contain at least one assertion
+46. **Every test function must contain at least one assertion
     against state the test's actions are expected to change.**
     `compare`, `tryCompare`, or `tryCompare(spy, "count", N)`
     all qualify; existence checks
