@@ -117,14 +117,15 @@ target_link_libraries(myapp
 )
 ```
 
-## Qt plugin (`qt5_add_plugin`)
+## Qt plugin (`add_library(... MODULE ...)`)
 
-Qt 5 provides `qt5_add_plugin()` for plugin targets (plain
-`add_library(... MODULE ...)` also works):
+Qt 5 has no `qt_add_plugin()` or `qt5_add_plugin()` macro — create a plugin
+with standard CMake `add_library(... MODULE ...)` (for dynamic plugins) or
+`add_library(... STATIC ...)` (for static plugins), with `Q_PLUGIN_METADATA`
+in the plugin class header and `AUTOMOC` enabled:
 
 ```cmake
-qt5_add_plugin(csvio
-    CLASS_NAME CsvIoPlugin
+add_library(csvio MODULE
     csvio.cpp
     csvio.h
 )
@@ -134,25 +135,25 @@ target_link_libraries(csvio
         MyApp::core
         Qt5::Core
 )
-
-# For static plugins, link the plugin into the executable:
-target_link_libraries(myapp PRIVATE csvio)
 ```
 
 ### Static vs. dynamic plugins
 
-- **Dynamic** (default): the plugin is a shared object loaded at runtime
-  from the `plugins/` directory of the Qt installation or `QT_PLUGIN_PATH`.
-- **Static**: add `STATIC` to `qt5_add_plugin`, link it into the executable,
-  and import it with `Q_IMPORT_PLUGIN(CsvIoPlugin)` in a `.cpp` of the
-  executable. CMake equivalent of the import: `qt5_import_plugins(myapp
-  INCLUDE csvio)` — available since Qt 5.14. On older Qt 5 versions use
-  `Q_IMPORT_PLUGIN` plus `qt5_add_resources`-free manual linking.
+- **Dynamic** (`MODULE`): the plugin is a shared object loaded at runtime
+  from the `plugins/` directory of the Qt installation or `QT_PLUGIN_PATH`
+  via `QPluginLoader`.
+- **Static** (`STATIC`): declare `add_library(csvio STATIC ...)` with
+  `target_compile_definitions(csvio PRIVATE QT_STATICPLUGIN)`, link `csvio`
+  into the executable (`target_link_libraries(myapp PRIVATE csvio)`), and
+  import it with `Q_IMPORT_PLUGIN(CsvIoPlugin)` in a `.cpp` of the
+  executable. For Qt's own static plugins, CMake also provides
+  `qt5_import_plugins(myapp INCLUDE ...)` (available since Qt 5.14).
 
 ### QML extension plugin
 
 For a QML extension plugin (a plugin that registers QML types), inherit
-`QQmlEngineExtensionPlugin` and call `qmlRegisterType` in its constructor.
+`QQmlExtensionPlugin`, declare `Q_PLUGIN_METADATA(IID QQmlExtensionInterface_iid)`,
+and call `qmlRegisterType` inside `registerTypes(const char *uri)`.
 The plugin must live in a directory matching its URI and ship a `qmldir`
 with a `plugin` line — see `references/qml-integration.md`.
 

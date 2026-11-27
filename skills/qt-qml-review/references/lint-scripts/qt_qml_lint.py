@@ -521,9 +521,8 @@ RE_IMP_MULTI_EFFECT = re.compile(r'\bMultiEffect\b')
 
 # --- BND (Bindings & Properties) ---
 
-# BND-1: property var usage. Research: qmllint warns via
-# prefer-non-var-properties; typed properties enable qmlsc compilation
-# to C++ and eliminate meta-object overhead in property access.
+# BND-1: property var usage. Typed properties enable better type safety
+# and eliminate meta-object overhead in property access.
 RE_BND_PROP_VAR = re.compile(r'^\s*(required\s+)?property\s+var\s+\w+')
 
 # BND-2: Imperative = on property that likely had a binding.
@@ -577,7 +576,7 @@ RE_LAY_PARENT_PARENT = re.compile(r'anchors\.\w+\s*:\s*parent\.parent\b')
 # null guard causes TypeError. qmllint does not catch this.
 RE_LDR_ITEM_ACCESS = re.compile(r'\bloader\w*\.item\b', re.IGNORECASE)
 RE_LDR_STATUS_GUARD = re.compile(
-    r'(status\s*===?\s*Loader\.Ready|Loader\.status|\.item\?\.|\bonLoaded\b)'
+    r'(status\s*===?\s*Loader\.Ready|Loader\.status|\bonLoaded\b|\bloader\w*\.item\s*(?:&&|\?))'
 )
 
 # LDR-2: Qt.createComponent with string URL.
@@ -749,8 +748,7 @@ RE_SIG_NEW_HANDLER = re.compile(r'^\s*function\s+on[A-Z]\w*\s*\(')
 
 # JS-1: var instead of let/const.
 # Research: var has function scope and hoisting, causing subtle bugs.
-# let/const have block scope. Qt coding instructions mandate
-# let/const. qmlsc can optimize const better than var.
+# let/const have block scope. Qt coding instructions mandate let/const.
 RE_JS_VAR = re.compile(r'(?<!\w)var\s+\w+\s*[=;]')
 RE_JS_VAR_EXCLUDE = re.compile(
     r'(property\s+var|^\s*//|^\s*/?\*)'
@@ -866,7 +864,7 @@ RULES_CONTEXT: "List[Rule]" = [
     # LDR-1: Loader.item without status guard
     Rule("LDR-1", RE_LDR_ITEM_ACCESS,
          "Loader.item accessed without status guard -- "
-         "check Loader.status === Loader.Ready or use optional chaining (?.)",
+         "check Loader.status === Loader.Ready or guard with loader.item && ...",
          context_before=5, context_after=5,
          context_pattern=RE_LDR_STATUS_GUARD,
          context_must_match=False),
@@ -1581,12 +1579,12 @@ def run_qmllint(qmllint: str, extra_args: "List[str]",
     findings: "List[Finding]" = []
     unmatched: "List[str]" = []
     # Location lines look like:
-    #   Warning: Main.qml:12: Some message
-    #   Main.qml:12: Some message
     #   Main.qml:12 : Some message
+    #   Main.qml:12:5 : Some message
+    #   Warning: Main.qml:12: Some message
     re_line = re.compile(
-        r"^\s*(?:Warning|Error)\s*:\s*"
-        r"(.+?):\s*(\d+)\s*:?\s*(.*)$"
+        r"^\s*(?:(?:Warning|Error)\s*:\s*)?"
+        r"(.+?):(\d+)(?::\d+)?\s*:\s*(.*)$"
     )
     for raw in output.splitlines():
         if not raw.strip():
@@ -1703,7 +1701,7 @@ def main() -> int:
     deduped: "List[Finding]" = []
     for f in all_findings:
         key = (f.file, f.line, f.rule,
-               f.message if f.rule.startswith("QL:") else "")
+               f.message if (f.rule == "QL" or f.rule.startswith("QL:")) else "")
         if key not in seen:
             seen.add(key)
             deduped.append(f)

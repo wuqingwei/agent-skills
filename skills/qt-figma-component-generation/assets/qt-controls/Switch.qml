@@ -87,11 +87,9 @@ T.Switch {
         leftPadding: control.indicator.width + control.spacing
 
         font {
-            family: Fonts.FontInterface.interFont.font.family
+            family: Fonts.FontInterface.interFont.name
             pixelSize: control._size.fontSize
-            variableAxes: {
-                "wght": control._size.fontWeight
-            }
+            weight: control._size.fontWeight
         }
     }
 

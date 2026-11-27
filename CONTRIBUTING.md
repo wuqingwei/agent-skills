@@ -387,7 +387,7 @@ allow_implicit_invocation: true
 dependencies:
   tools:
     - type: "mcp"
-      value: "qt-docs"
+      value: "figma"
 ```
 
 This file is optional. Without it, the skill still works in

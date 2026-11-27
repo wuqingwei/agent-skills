@@ -2,27 +2,26 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 // Typography.qml — [Project] Design System — Typography Tokens
 // Source: design-tokens.json › typography
-// CMake: set_source_files_properties(Typography.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+// Qt 5: register in main.cpp via qmlRegisterSingletonType(QUrl("qrc:/design-system/Typography.qml"), uri, 1, 0, "Typography")
 // Usage:
 //   font.family:    Typography.body
 //   font.pixelSize: Typography.label_m_size          // 12 px
-//   font.weight:    Typography.label_m_default_weight  // Medium 500
+//   font.weight:    Typography.label_m_default_weight  // Font.Medium (57)
 pragma Singleton
 import QtQuick 2.15
-import DesignSystem
 
 QtObject {
     // ── Font families ──────────────────────────────────────────────────────────
     // Resolved via FontInterface at runtime — FontInterface must be loaded first.
-    readonly property string body:    FontInterface.interFont.font.family
-    readonly property string mono:    FontInterface.inconsolata.font.family
-    readonly property string display: FontInterface.titilliumSemiBold.font.family
+    readonly property string body:    FontInterface.interFont.name
+    readonly property string mono:    FontInterface.inconsolata.name
+    readonly property string display: FontInterface.titilliumSemiBold.name
 
-    // ── Font weights ───────────────────────────────────────────────────────────
-    readonly property int regular:  400
-    readonly property int medium:   500
-    readonly property int semi_bold: 600
-    readonly property int bold:     700
+    // ── Font weights (Qt 5 Font.Weight enum: 0–99 scale, NOT Qt 6 100–900) ─────
+    readonly property int regular:   Font.Normal    // 50 (Figma 400)
+    readonly property int medium:    Font.Medium    // 57 (Figma 500)
+    readonly property int semi_bold: Font.DemiBold  // 63 (Figma 600)
+    readonly property int bold:      Font.Bold      // 75 (Figma 700)
 
     // ── Type scale — pixel sizes ───────────────────────────────────────────────
     readonly property int caption_size: 10   // Inter/Caption

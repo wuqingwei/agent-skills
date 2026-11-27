@@ -22,6 +22,6 @@ else:
 
 print(f"{tu}:3:5: warning: stub finding {check}")
 print(f"{tu}:4:5: warning: stub finding on an unchanged line {check}")
-print(f"/usr/include/qt6/QtCore/qobject.h:10:1: warning: header noise {check}")
+print(f"/usr/include/qt5/QtCore/qobject.h:10:1: warning: header noise {check}")
 if "_ok" not in tu:
     print(f"{tu}:7:1: error: stub compile failure{error_check}")

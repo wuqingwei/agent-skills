@@ -141,13 +141,13 @@ is ignored by the layout engine and creates confusion.
 ### LDR-1: Loader.item without status guard
 With `asynchronous: true`, `Loader.item` is `null` until
 `status === Loader.Ready`. Binding to `Loader.item.someProp` without
-a guard causes `TypeError`. Use optional chaining (`?.`) or gate on
-`Loader.status`.
+a guard causes `TypeError`. Gate on `Loader.status === Loader.Ready`
+or guard with `loader.item ? loader.item.someProp : ...` (Qt 5.15 QML
+does not support ES2020 optional chaining `?.`).
 
 ### LDR-2: Qt.createComponent with string URL
 String-based `Qt.createComponent()` is not type-safe and is not supported
-by QML tooling. Prefer `Component {}` definitions, or the module URI +
-type name overload of `Qt.createComponent`.
+by QML tooling. Prefer inline `Component {}` definitions.
 
 ### LDR-3: Qt.createQmlObject
 Parses a QML string at runtime on every call. No component caching.

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 // Primitives.qml — [Project] Design System — Global Primitive Color Palette
 // Source: design-tokens.json › colors
-// CMake: set_source_files_properties(Primitives.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+// Qt 5: register in main.cpp via qmlRegisterSingletonType(QUrl("qrc:/design-system/Primitives.qml"), uri, 1, 0, "Primitives")
 // Usage: Primitives.neutrals.neutral_900
 //        Primitives.accents.neon_500
 pragma Singleton

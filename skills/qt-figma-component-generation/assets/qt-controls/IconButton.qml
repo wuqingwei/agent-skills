@@ -89,7 +89,7 @@ T.AbstractButton {
         verticalAlignment: Text.AlignVCenter
 
         font {
-            family: Fonts.FontInterface.iconFont.font.family
+            family: Fonts.FontInterface.iconFont.name
             pixelSize: control._size.iconSize
         }
     }

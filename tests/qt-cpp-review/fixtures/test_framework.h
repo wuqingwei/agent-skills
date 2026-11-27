@@ -3,9 +3,6 @@
 // Test file for framework-only rules (--framework flag required)
 #pragma once
 
-// INC-6: qglobal.h (framework only)
-#include <qglobal.h>
-
 // INC-1: bare Qt header without module prefix (framework only, header only)
 #include <qstring.h>
 

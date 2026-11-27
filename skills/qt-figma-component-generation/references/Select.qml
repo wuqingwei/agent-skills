@@ -5,7 +5,7 @@
 // Sizes: "small" | "medium" (default) | "large"
 //
 // Usage:
-//   import DesignSystem
+//   import DesignSystem 1.0
 //   Select {
 //       label: "Country"
 //       model: ["Australia", "Finland", "Germany"]
@@ -15,8 +15,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import DesignSystem
-
+import DesignSystem 1.0
 Item {
     id: root
 

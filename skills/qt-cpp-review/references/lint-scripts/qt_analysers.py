@@ -80,14 +80,24 @@ class Diag(NamedTuple):
 # ---------------------------------------------------------------------------
 
 def list_qt_roots() -> list[str]:
-    """Qt installation roots to look in: the one above $QT_HOST_PATH
-    (<root>/6.x/<kit>), then the usual defaults."""
-    roots = []
-    host = os.environ.get("QT_HOST_PATH")
-    if host:
-        roots.append(os.path.dirname(os.path.dirname(os.path.normpath(host))))
-    roots.extend([os.path.expanduser("~/Qt"), "/opt/Qt", "C:\\Qt"])
-    return roots
+    """Qt installation roots to look in: above $QT_HOST_PATH or $Qt5_DIR
+    (<root>/5.x/<kit>), then the usual defaults (including per-version
+    Qt 5 installer roots such as ~/Qt5.15.2)."""
+    roots: list[str] = []
+    for var in ("QT_HOST_PATH", "Qt5_DIR"):
+        val = os.environ.get(var)
+        if val:
+            norm = os.path.normpath(val)
+            # Qt5_DIR often points at <kit>/lib/cmake/Qt5; climb up to the Qt root
+            if os.path.basename(norm) == "Qt5":
+                norm = os.path.dirname(os.path.dirname(os.path.dirname(norm)))
+            roots.append(os.path.dirname(os.path.dirname(norm)))
+    roots.extend(sorted(glob.glob(os.path.expanduser("~/Qt*"))))
+    roots.extend(sorted(glob.glob("/opt/Qt*")))
+    if sys.platform == "win32":
+        sysdrive = os.environ.get("SystemDrive", "C:")
+        roots.extend(sorted(glob.glob(sysdrive + "\\Qt*")))
+    return list(dict.fromkeys(roots))
 
 
 def find_tool(name: str, explicit: str | None = None) -> str | None:

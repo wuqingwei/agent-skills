@@ -29,10 +29,12 @@ add_executable(myapp main.cpp ${APP_RESOURCES})
 ```
 
 **Why:** Qt 5 has no `qt_standard_project_setup()`, no `qt_add_executable()`,
-no `qt_add_library()`, no `qt_add_qml_module()`, no `qt_add_translations()`,
-and no unprefixed `qt_*` command form. The `qt5_*`-prefixed macros
-(`qt5_add_resources`, `qt5_add_plugin`, `qt5_add_translation`, …) are the
-correct Qt 5 spelling. This is the inverse of the Qt 6 convention — do not
+no `qt_add_library()`, no `qt_add_plugin()`/`qt5_add_plugin()`, no
+`qt_add_qml_module()`, no `qt_add_translations()`, and no unprefixed `qt_*`
+command form. Use standard CMake `add_executable` / `add_library` (with
+`MODULE` for dynamic plugins) alongside the `qt5_*` macros Qt 5 actually ships
+(`qt5_add_resources`, `qt5_import_plugins`, `qt5_add_translation`,
+`qt5_create_translation`). This is the inverse of the Qt 6 convention — do not
 "modernise" a Qt 5 project by dropping the `5`.
 
 **Signature trap:** `qt5_add_resources` in Qt 5 is **variable-based** —
@@ -226,10 +228,11 @@ find_package(Qt5 5.15 REQUIRED COMPONENTS Quick)
 
 ## 13. Version mismatch between declared and used Qt
 
-If the project calls Qt 5.15-only API (`QRandomGenerator::global()`,
-`createTemporaryObject()` in tests, `required property` in QML), the
-`find_package` minimum must be 5.15 — not 5.9. Set the minimum to the
-oldest version whose API the code actually uses.
+If the project calls version-gated Qt 5 API (for example `QRandomGenerator::global()`
+from Qt 5.10, `Binding.restoreMode` from Qt 5.14, or `required property` /
+`QNetworkRequest::setTransferTimeout()` from Qt 5.15), the `find_package` minimum
+must be at least the version that introduced it — e.g. `5.15`, not `5.9`. Set the
+minimum to the oldest version whose API the code actually uses.
 
 ## 14. Generating a `.pro` file alongside `CMakeLists.txt`
 

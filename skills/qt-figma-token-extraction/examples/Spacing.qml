@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 // Spacing.qml — [Project] Design System — Spacing & Shape Tokens
 // Source: design-tokens.json › spacing, radii
-// CMake: set_source_files_properties(Spacing.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+// Qt 5: register in main.cpp via qmlRegisterSingletonType(QUrl("qrc:/design-system/Spacing.qml"), uri, 1, 0, "Spacing")
 // Usage:
 //   padding:        Spacing.x4        // 8 px
 //   radius:         Spacing.radius_m

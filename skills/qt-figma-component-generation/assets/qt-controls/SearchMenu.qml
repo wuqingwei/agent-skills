@@ -60,7 +60,6 @@ Item {
 
     T.Popup {
         id: tagPopup
-        popupType: Popup.Item
         closePolicy: Popup.NoAutoClose
         visible: tagNameModel.count > 0 && searchControl.activeFocus // Show only when tags exist and search control is focused
         width: searchControl.width
@@ -110,7 +109,6 @@ Item {
 
     T.Popup {
         id: popupMenu
-        popupType : Popup.Item
         width: searchControl.width
         y: control.height + 4
         height: {
@@ -257,11 +255,9 @@ Item {
                             elide: Text.ElideRight
 
                             // use variable weight inter font from font interface
-                            font.family: Fonts.FontInterface.interFont.font.family
+                            font.family: Fonts.FontInterface.interFont.name
                             // use variable weight definitions from tokens
-                            font.variableAxes: {
-                                "wght": control.style.fontWeightLarge
-                            }
+                            font.weight: control.style.fontWeightLarge
                             font.pixelSize: control.style.fontSize
 
                             color: {
@@ -289,7 +285,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: dropdownDelegateButton.checked
                                 text: Fonts.FontInterface.icons.tickMark_16
-                                font.family: Fonts.FontInterface.iconFont.font.family
+                                font.family: Fonts.FontInterface.iconFont.name
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                                 font.pixelSize: control.style.iconSize

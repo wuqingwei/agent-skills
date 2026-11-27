@@ -546,3 +546,53 @@ the same kind found while fixing them:
 The remaining observations from the same review were confirmed as intentional
 design trade-offs rather than defects, and are now recorded in §10 (no qmake
 skill, no per-tool install sections beyond upstream's set, no MCP servers).
+
+### 14.7 Fourth review pass (2026-11-27, post-sync audit + real Qt 5.15.3 verification)
+
+A deep review after the upstream 1.8.2 sync (`d2cdce9`), verified directly against
+a local Qt 5.15.3 toolchain (`qmllint`, `qmake`, `cmake`, `clang-tidy`, `mkdocs`),
+found and fixed the following issues:
+
+1. **Non-existent `qt5_add_plugin` macro.** Removed `qt5_add_plugin` from
+   `qt-cmake-project/SKILL.md`, `common-mistakes.md`, and `modular-architecture.md`
+   (replaced with standard CMake `add_library(... MODULE/STATIC ...)`, plus
+   `QQmlExtensionPlugin::registerTypes` for QML plugins). Also fixed the
+   self-contradictory `qmlRegisterSingletonType` factory note in
+   `qml-integration.md`, corrected `common-mistakes.md` §13 version attributions
+   (`QRandomGenerator` 5.10, `createTemporaryObject` 5.9), and updated `doc.qt.io`
+   links from `/qt-5.15/` to `/qt-5/`.
+2. **`qt-figma-token-extraction` compile/runtime bugs & font-weight scale.**
+   Fixed the invalid `qmlRegisterSingletonType(&themeProvider, ...)` call in
+   `SKILL.md` (pure-QML `Theme.qml` uses the `QUrl` overload; added `Typography.qml`
+   and `import QtQuick.Window 2.15`), switched font weights from Qt 6's 100–900
+   scale to Qt 5's `Font.*` enum (0–99 scale) in `token-mapping.md`, `SKILL.md`
+   and `examples/Typography.qml`, replaced `FontLoader.font.family` (Qt 6) with
+   `FontLoader.name`, and scrubbed the leftover `QT_QML_SINGLETON_TYPE TRUE`
+   comments from all 5 `examples/*.qml` files.
+3. **Qt 6-only APIs and ES2020 syntax in Figma QML assets.** Removed
+   `SearchField.qml` / `SearchFieldStyle.qml` (`QtQuick.Templates.SearchField`
+   is Qt 6.10+), converted 31 `font.variableAxes` blocks (Qt 6.7+) to
+   `font.weight` / `weight`, replaced 52 `FontInterface.*.font.family` lookups
+   with `.name`, removed `popupType` (Qt 6.8+) in `SearchMenu.qml`/`SpinBox.qml`,
+   removed `bottomLeftRadius`/`bottomRightRadius` (Qt 6.7+) in `TabButton.qml`,
+   replaced `(contentItem as ListView)?.contentWidth` (Qt 6 cast + ES2020 `?.`)
+   in `DialogButtonBox.qml`, replaced `??` (ES2020) in `references/Button.qml`,
+   removed the commented `MultiEffect` block in `Card.qml`, and versioned
+   `import DesignSystem 1.0` across all reference/example QML files.
+4. **`qt_qml_lint.py` bugs & Qt 5 syntax advice.** Fixed `run_qmllint()`'s
+   `re_line` regex to make the `Warning:`/`Error:` prefix optional so Qt 5's
+   `<file>:<line> : <msg>` format parses with line numbers instead of falling
+   into line 0; fixed `QL` deduplication (`f.rule == "QL"`) so multiple `qmllint`
+   messages on the same line are preserved; removed the ES2020 optional chaining
+   (`?.`) recommendation from `LDR-1` and the Qt 6.5 `Qt.createComponent(uri, type)`
+   overload from `LDR-2`.
+5. **Post-sync Qt 6 leftovers & C++ framework rules.** Updated
+   `tests/qt-cpp-review/fixtures/analyser_fixture/CMakeLists.txt`, `run_tests.py`
+   (`find_qt_prefixes` for Qt 5 kits and distro Qt 5), `fake_analyser.py`, and
+   `qt_analysers.py` (`list_qt_roots` for `~/Qt*` / `$Qt5_DIR`); updated `TST-1`
+   (`QCOMPARE` instead of Qt 6.4 `QCOMPARE_EQ`), `FW-INC-5` (dropped `qstringfwd.h`),
+   `FW-INC-6` / `INC-6` (retired `qglobal.h` split check for Qt 5), and `FW-QML-2`
+   (`Q_REVISION(minor)`); fixed `README.md` Cursor instructions (fork URL,
+   `qt5-development-skills`, no MCP), remaining `qt-development-skills:*` names,
+   rule counts (`55+`, `1-46`), `qt-qml-profiler` macOS subdir (`clang_64`) and
+   `qmlcachegen`, and `CONTRIBUTING.md` MCP example.

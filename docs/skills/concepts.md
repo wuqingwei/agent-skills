@@ -97,7 +97,7 @@ Skills load silently. To confirm activation:
 
 **Claude Code** — look for a `Skill` tool call in the transcript
 with the matching name, often namespaced as
-`qt-development-skills:qt-qml-review`. The agent's plan should
+`qt5-development-skills:qt-qml-review`. The agent's plan should
 quote workflow steps from the skill body.
 
 **Codex CLI** — skills appear in the loaded-skills banner at

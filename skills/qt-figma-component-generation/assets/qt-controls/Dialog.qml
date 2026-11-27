@@ -69,7 +69,7 @@ T.Dialog {
             verticalAlignment: Text.AlignVCenter
 
             font {
-                family: Fonts.FontInterface.iconFont.font.family
+                family: Fonts.FontInterface.iconFont.name
                 pixelSize: control._size.iconSize
             }
         }
@@ -85,11 +85,9 @@ T.Dialog {
             verticalAlignment: Text.AlignVCenter
 
             font {
-                family: Fonts.FontInterface.interFont.font.family
+                family: Fonts.FontInterface.interFont.name
                 pixelSize: control._size.titleSize
-                variableAxes: {
-                    "wght": control._size.titleWeight
-                }
+                weight: control._size.titleWeight
             }
         }
     }
@@ -111,11 +109,9 @@ T.Dialog {
             visible: control.info
 
             font {
-                family: Fonts.FontInterface.interFont.font.family
+                family: Fonts.FontInterface.interFont.name
                 pixelSize: control._size.fontSize
-                variableAxes: {
-                    "wght": control._size.fontWeight
-                }
+                weight: control._size.fontWeight
             }
         }
     }

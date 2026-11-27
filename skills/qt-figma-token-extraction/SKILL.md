@@ -113,6 +113,7 @@ Create `main.qml` as a placeholder:
 
 ```qml
 import QtQuick 2.15
+import QtQuick.Window 2.15
 
 Window {
     width:   640
@@ -126,7 +127,7 @@ Window {
 > registration — is written in Step 7 once all QML files are known. Do
 > not write it now. If the user encounters any build configuration
 > issues, suggest the user check Qt's CMake documentation at
-> https://doc.qt.io/qt-5.15/cmake-get-started.html rather than
+> https://doc.qt.io/qt-5/cmake-get-started.html rather than
 > troubleshooting inline.
 
 ---
@@ -491,7 +492,7 @@ Generate in this order: Primitives first (it has no dependencies), then Spacing 
 - Use `snake_case` throughout — `background_default`, `neutral_900`, `x4`, `radius_m`
 - `Primitives.qml` holds raw values only — no semantic meaning. `Theme.qml` holds semantic tokens only — always referencing `Primitives`, never raw hex values
 - Apply type mapping from `references/token-mapping.md` — `readonly property color` for colors, `readonly property int` for sizes, `readonly property string` for font names
-- Include the source comment and CMake note at the top of every file
+- Include the source comment and Qt 5 singleton registration note at the top of every file
 - Group related properties with section comments (`// ── Section name ─────`)
 - If a token is missing from the JSON, leave a `// TODO: <figmaName>` placeholder rather than guessing a value
 - **Imports:** Qt 5 requires version numbers on every module import — `import QtQuick 2.15`, and `import QtQuick.Window 2.15` when a file declares a `Window` outside `QtQuick.Controls`
@@ -549,6 +550,7 @@ target_link_libraries(<ProjectName> PRIVATE Qt5::Quick)
         <file>design-system/Theme.qml</file>
         <file>design-system/Spacing.qml</file>
         <file>design-system/FontInterface.qml</file>
+        <file>design-system/Typography.qml</file>
     </qresource>
 </RCC>
 ```
@@ -558,27 +560,23 @@ Singleton registration in `main.cpp` (before `engine.load(...)`):
 ```cpp
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QQmlContext>
 #include <QtQml>
-
-static QObject *themeProvider(QQmlEngine *engine, QJSEngine *jsEngine)
-{
-    Q_UNUSED(engine)
-    return new Theme(jsEngine);   // the generated Theme type
-}
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
-    QString uri = QStringLiteral("<ProjectName>.DesignSystem");
+    constexpr auto uri = "<ProjectName>.DesignSystem";
     qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/design-system/Primitives.qml")),
-                             uri.toUtf8().constData(), 1, 0, "Primitives");
-    qmlRegisterSingletonType(&themeProvider, uri.toUtf8().constData(), 1, 0, "Theme");
+                             uri, 1, 0, "Primitives");
+    qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/design-system/Theme.qml")),
+                             uri, 1, 0, "Theme");
     qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/design-system/Spacing.qml")),
-                             uri.toUtf8().constData(), 1, 0, "Spacing");
+                             uri, 1, 0, "Spacing");
     qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/design-system/FontInterface.qml")),
-                             uri.toUtf8().constData(), 1, 0, "FontInterface");
+                             uri, 1, 0, "FontInterface");
+    qmlRegisterSingletonType(QUrl(QStringLiteral("qrc:/design-system/Typography.qml")),
+                             uri, 1, 0, "Typography");
 
     QQmlApplicationEngine engine;
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
@@ -590,19 +588,19 @@ int main(int argc, char *argv[])
 
 Notes:
 
-- `qmlRegisterSingletonType(QUrl(...), ...)` points straight at the
-  generated files — each QML file must carry `pragma Singleton` at the
-  top (the generator already emits it).
-- For `Theme.qml`, which constructs a C++ object, use the factory form
-  so the object gets the engine as parent. Replace `Theme` with the
-  actual generated class or, when Theme is pure QML, register it with
-  the `QUrl` form like the others.
+- `qmlRegisterSingletonType(QUrl(...), ...)` registers each pure-QML
+  singleton file directly — every file must carry `pragma Singleton` at
+  the top (the generator already emits it).
+- If you later back a singleton with a C++ `QObject` class instead of a
+  `.qml` file, use the typed factory overload:
+  `qmlRegisterSingletonType<MyTheme>(uri, 1, 0, "Theme", &themeProvider)`.
 - The URI and version here must match the import used in QML.
 
 After updating CMakeLists.txt and `main.cpp`, confirm with the user that the files have been saved and show them how to use the singletons in `main.qml`:
 
 ```qml
 import QtQuick 2.15
+import QtQuick.Window 2.15
 import <ProjectName>.DesignSystem 1.0
 
 Window {
@@ -613,7 +611,7 @@ Window {
 }
 ```
 
-> **CMake issues:** If the user has build errors after updating CMakeLists.txt, suggest the user check Qt's CMake documentation at https://doc.qt.io/qt-5.15/cmake-get-started.html rather than troubleshooting inline.
+> **CMake issues:** If the user has build errors after updating CMakeLists.txt, suggest the user check Qt's CMake documentation at https://doc.qt.io/qt-5/cmake-get-started.html rather than troubleshooting inline.
 
 ---
 
@@ -636,7 +634,7 @@ Give the user a brief summary and ask them to review the output:
 - [ ] Primitive color palette (all color families and scales)
 - [ ] Semantic color tokens with all modes (if present)
 - [ ] Font families (heading, body, mono)
-- [ ] Font weights (numeric: 400/500/600/700)
+- [ ] Font weights (Qt 5 `Font.*` enum: `Font.Normal` / `Font.Medium` / `Font.DemiBold` / `Font.Bold`, 0–99 scale — not CSS 400/500/600/700)
 - [ ] Type scale from variables (size + weight + line height per role, if defined as variables)
 - [ ] Text styles (H1–H6, body, label, caption, code — font family, size, weight, line height, letter spacing)
 - [ ] Spacing scale (base unit + all named steps)

@@ -54,11 +54,9 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
 
         font {
-            family: Fonts.FontInterface.interFont.font.family
+            family: Fonts.FontInterface.interFont.name
             pixelSize: control._size.fontSize
-            variableAxes: {
-                "wght": control._size.fontWeight
-            }
+            weight: control._size.fontWeight
         }
     }
 
@@ -74,7 +72,7 @@ Row {
         verticalAlignment: Text.AlignVCenter
 
         font {
-            family: Fonts.FontInterface.iconFont.font.family
+            family: Fonts.FontInterface.iconFont.name
             pixelSize: control._size.iconSize
         }
     }

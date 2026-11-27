@@ -86,15 +86,16 @@ They exist because mainstream LLMs get them wrong by default — most models
 were trained on Qt 6 material and emit Qt 6 commands for Qt 5 projects.
 
 1. **Use the Qt 5 CMake API, not Qt 6.** `find_package(Qt5 ...)`, `add_executable`,
-   `add_library`, `qt5_add_resources` (variable form:
-   `qt5_add_resources(<VAR> <.qrc> ...)` — **not** the Qt 6
+   `add_library` (including `add_library(<name> MODULE ...)` for dynamic plugins and
+   `STATIC` for static plugins — Qt 5 has no `qt5_add_plugin`), `qt5_add_resources`
+   (variable form: `qt5_add_resources(<VAR> <.qrc> ...)` — **not** the Qt 6
    `qt_add_resources(target "name" PREFIX ... FILES ...)` target form),
-   `qt5_add_plugin`, `qt5_add_translation` / `qt5_create_translation`
-   (there is no `qt5_add_translations` — that plural form is Qt 6 only).
-   Never `qt_add_executable`, `qt_add_library`, `qt_add_qml_module`,
-   `qt_standard_project_setup`, or the `qt6_*`/unprefixed `qt_*` forms — none of
-   them exist in Qt 5. Conversely, in a Qt 5 project the `qt5_*`-prefixed macros
-   are the correct spelling.
+   `qt5_import_plugins` (Qt 5.14+, for static plugins), `qt5_add_translation` /
+   `qt5_create_translation` (there is no `qt5_add_translations` — that plural form
+   is Qt 6 only). Never `qt_add_executable`, `qt_add_library`, `qt_add_plugin`,
+   `qt5_add_plugin`, `qt_add_qml_module`, `qt_standard_project_setup`, or the
+   `qt6_*`/unprefixed `qt_*` forms — none of them exist in Qt 5. Conversely, in a
+   Qt 5 project the `qt5_*`-prefixed macros that Qt 5 ships are the correct spelling.
 2. **Enable the AUTOMOC family explicitly.** Qt 5 has no
    `qt_standard_project_setup()`. In the top-level `CMakeLists.txt` set
    `CMAKE_AUTOMOC ON`, `CMAKE_AUTOUIC ON` (when using `.ui` files) and
@@ -145,8 +146,8 @@ were trained on Qt 6 material and emit Qt 6 commands for Qt 5 projects.
 Qt 5 CMake command signatures are stable, but before generating non-trivial CMake
 it is still worth verifying against the Qt 5 docs.
 
-1. **Fallback to web fetch** of `https://doc.qt.io/qt-5.15/cmake-manual.html` and the
-   per-command reference pages (e.g. `https://doc.qt.io/qt-5.15/qt5-add-resources.html`)
+1. **Fallback to web fetch** of `https://doc.qt.io/qt-5/cmake-manual.html` and the
+   per-command reference pages (e.g. `https://doc.qt.io/qt-5/qtcore-cmake-qt5-add-resources.html`)
    when a web tool is available.
 2. **If no web tool is available**, follow the patterns in the references below and explicitly tell
    the user which command signature you assumed, so they can verify against their Qt version.

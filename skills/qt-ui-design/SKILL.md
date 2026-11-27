@@ -325,5 +325,5 @@ Apply section 4 constraints first if the target is embedded.
 - Apple Human Interface Guidelines: https://developer.apple.com/design/human-interface-guidelines
 - Microsoft Fluent 2 Design Principles: https://fluent2.microsoft.design/design-principles
 - Google Material Design 3 Foundations: https://m3.material.io/foundations
-- Qt QLocale (localisation API): https://doc.qt.io/qt-5.15/qlocale.html
-- Qt LayoutMirroring (RTL): https://doc.qt.io/qt-5.15/qml-qtquick-layoutmirroring.html
+- Qt QLocale (localisation API): https://doc.qt.io/qt-5/qlocale.html
+- Qt LayoutMirroring (RTL): https://doc.qt.io/qt-5/qml-qtquick-layoutmirroring.html

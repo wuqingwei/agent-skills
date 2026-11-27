@@ -5,14 +5,13 @@
 // Sizes:  "small" | "medium" (default) | "large"
 //
 // Usage:
-//   import DesignSystem
+//   import DesignSystem 1.0
 //   Toggle { label: "Dark mode"; checked: true }
 //   Toggle { size: "small"; onToggled: console.log(checked) }
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import DesignSystem
-
+import DesignSystem 1.0
 Switch {
     id: root
 

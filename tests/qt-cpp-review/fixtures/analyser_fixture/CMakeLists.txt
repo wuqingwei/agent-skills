@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt5 5.15 REQUIRED COMPONENTS Core)
 
 add_library(analyser_fixture STATIC smoke.cpp)
-target_link_libraries(analyser_fixture PRIVATE Qt6::Core)
+target_link_libraries(analyser_fixture PRIVATE Qt5::Core)

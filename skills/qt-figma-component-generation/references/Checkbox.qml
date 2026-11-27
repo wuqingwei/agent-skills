@@ -6,14 +6,13 @@
 // Sizes:  "small" | "medium" (default) | "large"
 //
 // Usage:
-//   import DesignSystem
+//   import DesignSystem 1.0
 //   Checkbox { label: "Accept terms"; checked: true }
 //   Checkbox { checkState: Qt.PartiallyChecked }   // indeterminate
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import DesignSystem
-
+import DesignSystem 1.0
 CheckBox {
     id: root
 

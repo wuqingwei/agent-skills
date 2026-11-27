@@ -85,7 +85,7 @@ T.TabButton {
                 lineHeight: control._size.lineHeight
 
                 font {
-                    family: Fonts.FontInterface.iconFont.font.family
+                    family: Fonts.FontInterface.iconFont.name
                     pixelSize: control._size.iconSize
                 }
             }
@@ -106,11 +106,9 @@ T.TabButton {
                 verticalAlignment: Text.AlignVCenter
 
                 font {
-                    family: Fonts.FontInterface.interFont.font.family
+                    family: Fonts.FontInterface.interFont.name
                     pixelSize: control._size.fontSize
-                    variableAxes: {
-                        "wght": control._size.fontWeight
-                    }
+                    weight: control._size.fontWeight
                 }
             }
         }
@@ -121,12 +119,8 @@ T.TabButton {
         implicitHeight: control._size.lineHeight + (control._size.verticalPadding * 2)
 
         color: control._style.background
-        radius: control._size.radius
-
-        property int bottomRadius: control.typeVariant === TabButtonStyle.TypeVariant.Underline ? 0 : control._size.radius
-
-        bottomLeftRadius: bottomRadius
-        bottomRightRadius: bottomRadius
+        // Qt 5 Rectangle only has a uniform radius (per-corner radii require Qt 6.7+)
+        radius: control.typeVariant === TabButtonStyle.TypeVariant.Underline ? 0 : control._size.radius
 
         Rectangle {
             visible: control._style.borderWidth

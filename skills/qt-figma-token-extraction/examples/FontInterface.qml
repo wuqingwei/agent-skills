@@ -3,7 +3,7 @@
 
 // FontInterface.qml — [Project] Design System — Font Loaders & Icon Index
 // Source: design-tokens.json › typography + icon font file
-// CMake: set_source_files_properties(FontInterface.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+// Qt 5: register in main.cpp via qmlRegisterSingletonType(QUrl("qrc:/design-system/FontInterface.qml"), uri, 1, 0, "FontInterface")
 // Usage:
 //   font.family:    FontInterface.interFont.name
 //   font.family:    FontInterface.titilliumSemiBold.name

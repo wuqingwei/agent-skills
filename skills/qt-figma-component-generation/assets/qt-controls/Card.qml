@@ -194,19 +194,7 @@ Item {
             z: 1
             fillMode: Image.PreserveAspectCrop // maybe we want fit here
         }
-/*
-        MultiEffect {
-            id: hoverBlur
-            visible: maskHandler.hovered
-            source: thumbnail
-            anchors.fill: thumbnail
-            blurEnabled: true
-            blurMax: 64
-            blur: 0.5
-            clip: true //clipping doesn't really work on small images with round corners, the edge pixels are always there.
-            z: 1 // z fighting with multieffect
-        }
-*/
+
         HoverHandler {
             id: maskHandler
             cursorShape: {
@@ -246,11 +234,9 @@ Item {
         anchors.margins: 20
         text: control.description
         // use variable weight inter font from font interface
-        font.family: Fonts.FontInterface.interFont.font.family
+        font.family: Fonts.FontInterface.interFont.name
         // use variable weight definitions from tokens
-        font.variableAxes: {
-            "wght": control.style.fontWeightSmall
-        }
+        font.weight: control.style.fontWeightSmall
         font.pixelSize: control.style.fontSizeSmall
         color: control.style.textIdle
         //wrapping for the block
@@ -366,11 +352,9 @@ Item {
         elide: Text.ElideRight
 
         // use variable weight inter font from font interface
-        font.family: Fonts.FontInterface.interFont.font.family
+        font.family: Fonts.FontInterface.interFont.name
         // use variable weight definitions from tokens
-        font.variableAxes: {
-            "wght": control.style.fontWeightLarge
-        }
+        font.weight: control.style.fontWeightLarge
         font.pixelSize: control.style.fontSize
         color: {
             if (update.hovered)
@@ -418,7 +402,7 @@ Item {
             visible: control.wasSuccess //this is shown for one second after a succesfull download
 
             text: Fonts.FontInterface.icons.apply_16
-            font.family: Fonts.FontInterface.iconFont.font.family
+            font.family: Fonts.FontInterface.iconFont.name
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.pixelSize: control.style.iconSize
@@ -485,11 +469,9 @@ Item {
             elide: Text.ElideRight
 
             // use variable weight inter font from font interface
-            font.family: Fonts.FontInterface.interFont.font.family
+            font.family: Fonts.FontInterface.interFont.name
             // use variable weight definitions from tokens
-            font.variableAxes: {
-                "wght": control.style.fontWeightSmall
-            }
+            font.weight: control.style.fontWeightSmall
             font.pixelSize: control.style.fontSizeSmall
             color: control.style.textActive
             z: 2
@@ -508,11 +490,9 @@ Item {
             horizontalAlignment: Text.AlignRight
 
             // use variable weight inter font from font interface
-            font.family: Fonts.FontInterface.interFont.font.family
+            font.family: Fonts.FontInterface.interFont.name
             // use variable weight definitions from tokens
-            font.variableAxes: {
-                "wght": control.style.fontWeightSmall
-            }
+            font.weight: control.style.fontWeightSmall
             font.pixelSize: control.style.fontSizeSmall
             color: control.style.textActive
             z: 2
@@ -537,11 +517,9 @@ Item {
         linkColor: control.style.linkTextColor
 
         // use variable weight inter font from font interface
-        font.family: Fonts.FontInterface.interFont.font.family
+        font.family: Fonts.FontInterface.interFont.name
         // use variable weight definitions from tokens
-        font.variableAxes: {
-            "wght": control.style.fontWeightSmall
-        }
+        font.weight: control.style.fontWeightSmall
         font.pixelSize: control.style.fontSizeSmall
         color: control.style.textActive
 
@@ -604,12 +582,10 @@ Item {
             height: tag.height //hacky
             text: "Tags:"
             // use variable weight inter font from font interface
-            font.family: Fonts.FontInterface.interFont.font.family
+            font.family: Fonts.FontInterface.interFont.name
             verticalAlignment: Text.AlignVCenter
             // use variable weight definitions from tokens
-            font.variableAxes: {
-                "wght": control.style.fontWeightSmall
-            }
+            font.weight: control.style.fontWeightSmall
             font.pixelSize: control.style.fontSizeSmall
             color: control.style.textActive
         }

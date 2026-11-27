@@ -81,7 +81,7 @@ Qt module code.
 
 ## Tests
 
-- **TST-1**: QCOMPARE_EQ for QStringList comparisons.
+- **TST-1**: Use `QCOMPARE` for QStringList comparisons (`QCOMPARE_EQ` is Qt 6.4+ only and does not exist in Qt 5).
 - **TST-2**: QCOMPARE: tested value first, expected second.
 - **TST-3**: QSKIP over `#if` for non-pertinent tests.
 

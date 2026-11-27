@@ -11,7 +11,7 @@ Read this file before generating any QML properties. Apply these rules to every 
 | `COLOR` | colors, semanticColors | `readonly property color` | Use hex string `"#rrggbb"` or `"#aarrggbb"` for alpha. Never use `Qt.rgba()` unless the value has a non-1.0 alpha. |
 | `FLOAT` — whole pixel size | spacing, radii, icon sizes, border widths, font sizes | `readonly property int` | Use only when the value is truly whole. Round if Figma exports a near-integer. |
 | `FLOAT` — fractional size | letter spacing, line height, `font.pointSize` | `readonly property real` | Keep the decimal. Rounding letter spacing or line height loses fidelity; rounding 0.5 px border doubles a hairline stroke. |
-| `FLOAT` — font weight | typography | `readonly property int` | Standard values: 100, 200, 300, 400, 500, 600, 700, 800, 900. Map Figma weight names: Regular→400, Medium→500, SemiBold→600, Bold→700. |
+| `FLOAT` — font weight | typography | `readonly property int` | **Qt 5 uses the 0–99 `Font.Weight` scale** (not Qt 6's 100–900 OpenType scale). Map Figma weights to `Font.*` constants: Thin→`Font.Thin` (0), ExtraLight→`Font.ExtraLight` (12), Light→`Font.Light` (25), Regular→`Font.Normal` (50), Medium→`Font.Medium` (57), SemiBold→`Font.DemiBold` (63), Bold→`Font.Bold` (75), ExtraBold→`Font.ExtraBold` (81), Black→`Font.Black` (87). Passing 400–900 to `font.weight` in Qt 5 clamps out-of-range values to Black. |
 | `FLOAT` — opacity / scale | effects | `readonly property real` | Keep as decimal (0.0–1.0). Do not convert to int. |
 | `STRING` | font families, text content | `readonly property string` | Use double-quoted string literals. |
 | `BOOLEAN` | feature flags, states | `readonly property bool` | `true` / `false`. |
@@ -73,21 +73,21 @@ Font families and font weight names map as follows:
 readonly property string font_family_heading: "Titillium Web"
 readonly property string font_family_body:    "Inter"
 
-// Font weight — always an int matching Qt.font weight values
-readonly property int weight_thin:       100
-readonly property int weight_light:      300
-readonly property int weight_regular:    400
-readonly property int weight_medium:     500
-readonly property int weight_semi_bold:  600
-readonly property int weight_bold:       700
-readonly property int weight_extra_bold: 800
-readonly property int weight_black:      900
+// Font weight — always an int using Qt 5's Font.Weight enum (0–99 scale, NOT 100–900)
+readonly property int weight_thin:       Font.Thin        // 0  (Figma 100)
+readonly property int weight_light:      Font.Light       // 25 (Figma 300)
+readonly property int weight_regular:    Font.Normal      // 50 (Figma 400)
+readonly property int weight_medium:     Font.Medium      // 57 (Figma 500)
+readonly property int weight_semi_bold:  Font.DemiBold    // 63 (Figma 600)
+readonly property int weight_bold:       Font.Bold        // 75 (Figma 700)
+readonly property int weight_extra_bold: Font.ExtraBold   // 81 (Figma 800)
+readonly property int weight_black:      Font.Black       // 87 (Figma 900)
 ```
 
 In Theme.typography, refer to the named weight constants rather than raw numbers where possible:
 
 ```qml
-readonly property int h1_weight: weight_semi_bold   // 600
+readonly property int h1_weight: weight_semi_bold   // Font.DemiBold (63)
 ```
 
 ---

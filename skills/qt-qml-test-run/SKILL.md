@@ -288,7 +288,8 @@ passed `--wire-up`). Apply the four sub-steps from
 [qt-quick-test-cmake.md § Wire-up procedure](references/qt-quick-test-cmake.md#wire-up-procedure):
 
 - **5a.** Write `tests/CMakeLists.txt` — pick GuiApplication
-  or Widgets variant; auto-fill plugin links; never overwrite.
+  or Widgets variant; auto-fill the project QML-registering library
+  link when found; never overwrite.
 - **5b.** Write `tests/main.cpp` matching that variant;
   `QUICK_TEST_MAIN_WITH_SETUP` with a Setup class that sets
   organization / domain / application names. Never overwrite.
@@ -413,7 +414,7 @@ framing).
 ## References
 
 - [qt-quick-test-cmake.md](references/qt-quick-test-cmake.md) —
-  CMake wiring, module-on-executable refactor, common
+  CMake wiring, QML type exposure detection, common
   failure modes. Load at Steps 4a, 5, or 6.
 - [qt-quick-test-report-format.md](references/qt-quick-test-report-format.md) —
   Report sections, parser output, console summary. Load at

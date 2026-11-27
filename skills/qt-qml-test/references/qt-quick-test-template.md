@@ -325,8 +325,9 @@ the contained scene. Load the source as a `Component` via
 `Qt.createComponent` and create the window object directly.
 
 **Pick the URL form by source location** (see table below).
-Library-backed modules use the qrc form; executable-backed and
-no-CMake-info cases use `Qt.resolvedUrl("../<File>.qml")`.
+When the `.qrc` is compiled into the test binary or a linked
+library, use the `qrc:/` form; otherwise use
+`Qt.resolvedUrl("../<File>.qml")`.
 Absolute `file:///` is an escape hatch for symlinked test trees.
 
 ```qml

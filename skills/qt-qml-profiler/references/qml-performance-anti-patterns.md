@@ -80,7 +80,7 @@ when navigating to new views.
 - Files not covered by ahead-of-time compilation (qmlcachegen)
 
 **Fixes:**
-- Ensure qmlcachegen/qmlsc is enabled in the build
+- Ensure `qmlcachegen` (Qt Quick Compiler) is enabled in the build
 - Split large QML files into smaller components (compiled separately)
 - Preload critical components during splash screen
 

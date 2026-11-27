@@ -24,7 +24,7 @@ T.DialogButtonBox {
                    (control.count === 1 ? implicitContentWidth * 2 : implicitContentWidth) + leftPadding + rightPadding)
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                     implicitContentHeight + topPadding + bottomPadding)
-    contentWidth: (contentItem as ListView)?.contentWidth
+    contentWidth: contentItem ? contentItem.contentWidth : 0
 
     spacing: control._size.spacing
     horizontalPadding: control._size.horizontalPadding

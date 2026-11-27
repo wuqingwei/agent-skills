@@ -129,7 +129,7 @@ T.ComboBox {
         rotation: popup.opened ? 180 : 0
 
         font {
-            family: Fonts.FontInterface.iconFont.font.family
+            family: Fonts.FontInterface.iconFont.name
             pixelSize: control._size.iconSize
         }
     }

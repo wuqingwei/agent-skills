@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 // Theme.qml — [Project] Design System — Semantic Color Tokens
 // Source: design-tokens.json › semanticColors
-// CMake: set_source_files_properties(Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+// Qt 5: register in main.cpp via qmlRegisterSingletonType(QUrl("qrc:/design-system/Theme.qml"), uri, 1, 0, "Theme")
 // Usage: Theme.background_default
 //        Theme.text_muted
 //        Theme.notification_alert_default

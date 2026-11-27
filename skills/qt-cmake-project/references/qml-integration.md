@@ -125,9 +125,10 @@ Notes:
 - There are no `QML_ELEMENT`/`QML_NAMED_ELEMENT`/`QML_SINGLETON` macros in
   Qt 5 — those are the Qt 6 build-system-driven registration. Qt 5 uses
   explicit `qmlRegister*` calls.
-- `qmlRegisterSingletonType` with a factory: the object must not have a
-  parent; give it the `QJSEngine` (or `QQmlEngine`) as parent so the
-  engine cleans it up.
+- `qmlRegisterSingletonType` with a factory: return a newly allocated
+  `QObject *` (parented to `jsEngine`/`engine`, or parentless so the QML
+  engine takes `JavaScriptOwnership` and destroys it on engine teardown).
+  Do not return an object owned by another unrelated parent.
 - `setContextProperty` also exists for simple global objects but bypasses
   type safety and tooling; prefer `qmlRegisterSingletonType` for anything
   reused.

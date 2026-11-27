@@ -113,7 +113,7 @@ T.AbstractButton {
                     visible: leadingIcon.text.length !== 0
 
                     font {
-                        family: Fonts.FontInterface.iconFont.font.family
+                        family: Fonts.FontInterface.iconFont.name
                         pixelSize: control._size.iconSize
                     }
 
@@ -130,12 +130,9 @@ T.AbstractButton {
                     elide: Text.ElideRight
 
                     font {
-                        family: Fonts.FontInterface.interFont.font.family
+                        family: Fonts.FontInterface.interFont.name
                         pixelSize: control._size.fontSize
-                        variableAxes: {
-                            //"wght": control.style.fontWeightLarge
-                            "wght": control.currentState === "active" ? 600 : 500
-                        }
+                        weight: control.currentState === "active" ? Font.DemiBold : Font.Medium
                     }
 
                     color: control._style.text
@@ -152,7 +149,7 @@ T.AbstractButton {
 
 
                     font {
-                        family: Fonts.FontInterface.iconFont.font.family
+                        family: Fonts.FontInterface.iconFont.name
                         pixelSize: control._size.iconSize
                     }
 

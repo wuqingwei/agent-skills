@@ -43,8 +43,10 @@ Each rule has a short ID prefixed with `FW-` for cross-referencing.
 - **FW-INC-3**: qNN headers sort by eventual name (in C++ group).
   Don't include both qNNfoo.h and <foo>.
 - **FW-INC-5**: Prefer forward-declaring in headers. Use
-  qcontainerfwd.h / qstringfwd.h.
-- **FW-INC-6**: Don't include qglobal.h. Use fine-grained headers.
+  `qcontainerfwd.h` (Qt 5 has no `qstringfwd.h`).
+- **FW-INC-6**: *(Retired for Qt 5)* `qglobal.h` was only split into
+  fine-grained headers (`qtypes.h`, `qassert.h`, `qminmax.h`, …) in
+  Qt 6.5; including `<QtCore/qglobal.h>` is normal in Qt 5.
 
 ## Variables (Framework)
 
@@ -162,7 +164,9 @@ Each rule has a short ID prefixed with `FW-` for cross-referencing.
 ## QML Module Versioning
 
 - **FW-QML-1**: New properties/methods/signals must be revisioned.
-- **FW-QML-2**: Use two-argument forms for REVISION/Q_REVISION.
+- **FW-QML-2**: Use `Q_REVISION(minor)` (Qt 5 single-argument form)
+  when exposing revisioned properties/methods/signals (the encoded
+  two-argument `Q_REVISION(major, minor)` form is Qt 6).
 - **FW-QML-3**: Don't add new props/signals to QObject class
   itself (affects all QML consumers).
 

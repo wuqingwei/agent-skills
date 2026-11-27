@@ -21,13 +21,13 @@
 //         QML combines outer + inner into leftPadding/rightPadding on the Text item.
 //
 // Usage:
-//   import DesignSystem
+//   import DesignSystem 1.0
 //   Button { label: "Save";   variant: "primary"; onClicked: doSave() }
 //   Button { label: "Cancel"; variant: "ghost";   size: "small" }
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import DesignSystem
+import DesignSystem 1.0
 
 AbstractButton {
     id: root
@@ -81,7 +81,7 @@ AbstractButton {
         "danger":  Theme.notification_danger_default,
         "info":    Theme.notification_info_default,
         "success": Theme.notification_success_default
-    })[color] ?? Theme.primary_default
+    })[color] || Theme.primary_default
 
     readonly property color _accentMuted: ({
         "neutral": Theme.primary_muted,
@@ -89,7 +89,7 @@ AbstractButton {
         "danger":  Theme.notification_danger_muted,
         "info":    Theme.notification_info_muted,
         "success": Theme.notification_success_muted
-    })[color] ?? Theme.primary_muted
+    })[color] || Theme.primary_muted
 
     readonly property color _accentSubtle: ({
         "neutral": Theme.primary_subtle,
@@ -97,7 +97,7 @@ AbstractButton {
         "danger":  Theme.notification_danger_subtle,
         "info":    Theme.notification_info_subtle,
         "success": Theme.notification_success_subtle
-    })[color] ?? Theme.primary_subtle
+    })[color] || Theme.primary_subtle
 
     // ── Background — Figma-verified state machine (component set, 2026-04-14) ─
     //

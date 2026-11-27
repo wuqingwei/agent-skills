@@ -78,7 +78,7 @@ compiler subdirectory name, the binary suffix, and the PATH lookup command:
 | OS | Qt compiler subdir | Binary suffix | PATH lookup |
 |---|---|---|---|
 | Linux | `gcc_64` | *(none)* | `which` |
-| macOS | `macos` | *(none)* | `which` |
+| macOS | `clang_64` | *(none)* | `which` |
 | Windows | `msvc2019_64`, `mingw81_64` | `.exe` | `where` |
 
 Find the qmlprofiler executable. Try these sources in order and use the

@@ -360,7 +360,7 @@ whenever a rule citation here is unclear.
 ## References
 
 - [qt-quick-test-rules.md](references/qt-quick-test-rules.md) —
-  full normative text of every numbered rule (1-47) with
+  full normative text of every numbered rule (1-46) with
   examples and rationale. The "Testing rules" section above
   is a one-line index; load this reference for the full
   text. Load on first generation in a session.
@@ -371,8 +371,9 @@ whenever a rule citation here is unclear.
   bounded-read set (source, direct imports, `qmldir`, nearest
   `CMakeLists.txt`). Load at workflow step 2.
 - [qt-quick-test-source-import.md](references/qt-quick-test-source-import.md) —
-  source-import resolution: library vs executable backing,
-  module-on-executable refactor. Load at workflow step 5.
+  source-import resolution: registered module URI (`qmlRegister*`
+  / on-disk `qmldir`) vs relative directory import. Load at
+  workflow step 5.
 - [qt-quick-test-template.md](references/qt-quick-test-template.md) —
   template variants (single, nested, focus, multi-instance,
   standard buttons, press/move/release, Window, singleton)

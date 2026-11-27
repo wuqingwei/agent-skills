@@ -48,12 +48,10 @@ Text {
     lineHeightMode: Text.FixedHeight
 
     font {
-        family: Fonts.FontInterface.interFont.font.family
+        family: Fonts.FontInterface.interFont.name
         pixelSize: control._size.fontSize
         underline: true
-        variableAxes: {
-            "wght": control._size.fontWeight
-        }
+        weight: control._size.fontWeight
     }
 
     HoverHandler {

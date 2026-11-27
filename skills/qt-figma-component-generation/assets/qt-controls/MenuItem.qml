@@ -44,7 +44,7 @@ T.MenuItem {
         rotation: 270
 
         font {
-            family: Fonts.FontInterface.iconFont.font.family
+            family: Fonts.FontInterface.iconFont.name
             pixelSize: control._size.iconSize
         }
     }

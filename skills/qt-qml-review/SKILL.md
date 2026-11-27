@@ -61,7 +61,7 @@ These rules exist to keep the review cheap. Follow them.
    agents for a small scope and split a large one into shards of about
    equal line count.
 5. **Use the dedicated review agent where the tool has one.** If the
-   `qt-development-skills:qml-review-agent` definition shipped with
+   `qt5-development-skills:qml-review-agent` definition shipped with
    this plugin is available, launch the agents with it (read-only,
    tools limited to Read, Grep, Glob and read-only Bash); otherwise
    use the tool's general-purpose agent.
@@ -156,7 +156,7 @@ only:
 2. The root directory from the lint summary, the files in scope
    relative to it and, in diff scope, the
    `git diff -U50 <range> -- <files>` command for them
-3. The lint summary rows (including `QL:` rows) for that agent's own
+3. The lint summary rows (including `QL` rows) for that agent's own
    files only (a shard agent never needs the other shards' rows),
    with the instruction "do not re-report these lines"
 4. The instruction to load everything with one Bash call before

@@ -275,25 +275,24 @@ echo '@skills/qt-qml-review/SKILL.md' >> GEMINI.md
 ### Cursor
 
 This repository is also a Cursor plugin marketplace
-(`.cursor-plugin/marketplace.json`), so the whole plugin — skills,
-review subagents and the Qt Documentation MCP server — installs in
-one step.
+(`.cursor-plugin/marketplace.json`), so the whole plugin — skills and
+review subagents — installs in one step.
 
 **Team marketplace (Teams/Enterprise):** Dashboard → Plugins & MCPs
 → Team Marketplaces → Add Marketplace → Import from Repo, paste
-`https://github.com/TheQtCompanyRnD/agent-skills`. The plugin then
+`https://github.com/wuqingwei/agent-skills`. The plugin then
 shows up under Customize, where you install it with project or
 user scope.
 
 **Local install (any plan):**
 
 ```bash
-git clone https://github.com/TheQtCompanyRnD/agent-skills \
-  ~/.cursor/plugins/local/qt-development-skills
+git clone https://github.com/wuqingwei/agent-skills \
+  ~/.cursor/plugins/local/qt5-development-skills
 ```
 
-Run `Developer: Reload Window` and check Customize for the skills,
-agents and the `qt-docs` MCP server. Clone rather than symlink:
+Run `Developer: Reload Window` and check Customize for the skills and
+agents. Clone rather than symlink:
 Cursor only loads symlinks that resolve inside
 `~/.cursor/plugins/local/`.
 

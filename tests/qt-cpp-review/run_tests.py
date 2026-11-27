@@ -109,8 +109,8 @@ EXPECTED_UNIVERSAL = {
 # Framework-mode expected findings (--framework flag)
 # Only the framework-specific rules from dedicated test files.
 EXPECTED_FRAMEWORK = {
-    ("test_framework.h", "INC-6"): 1,
     ("test_framework.h", "INC-1"): 1,
+    ("test_framework.h", "INC-3"): 1,
     ("test_framework.cpp", "CND-2"): 1,
 }
 
@@ -458,17 +458,43 @@ def check_stub_analysers() -> list[str]:
     return errors
 
 
+def _has_qt5_cmake(prefix: str) -> bool:
+    p = Path(prefix)
+    return any(
+        (p / sub / "cmake" / "Qt5" / "Qt5Config.cmake").is_file()
+        for sub in ("lib", "lib64", "lib/x86_64-linux-gnu", "lib/aarch64-linux-gnu")
+    )
+
+
 def find_qt_prefixes() -> list[str]:
-    """Qt 6 kits with CMake config files: those named by the environment,
-    then ~/Qt kits by descending version."""
-    candidates = [os.environ.get("CMAKE_PREFIX_PATH", "").split(os.pathsep)[0],
-                  os.environ.get("QT_HOST_PATH", "")]
-    kits = (Path.home() / "Qt").glob("6.*/gcc_64")
+    """Qt 5 kits with CMake config files: environment hints, Qt installer
+    roots (~/Qt*/5.*/gcc_64, /opt/Qt*/5.*/gcc_64), and system Qt 5 via qmake."""
+    candidates: list[str] = [
+        os.environ.get("CMAKE_PREFIX_PATH", "").split(os.pathsep)[0],
+        os.environ.get("QT_HOST_PATH", ""),
+    ]
+    qt5_dir = os.environ.get("Qt5_DIR", "")
+    if qt5_dir:
+        p = Path(qt5_dir)
+        candidates.append(str(p.parents[2]) if p.name == "Qt5" and len(p.parents) >= 3 else qt5_dir)
+    kits: list[Path] = []
+    for base in (Path.home(), Path("/opt")):
+        if base.is_dir():
+            for qt_root in base.glob("Qt*"):
+                kits.extend(qt_root.glob("5.*/gcc_64"))
     candidates += [str(k) for k in sorted(
         kits, key=lambda k: [int(n) for n in re.findall(r"\d+", k.parent.name)],
         reverse=True)]
-    return [p for p in candidates
-            if p and (Path(p) / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake").is_file()]
+    qmake = shutil.which("qmake") or shutil.which("qmake-qt5")
+    if qmake:
+        try:
+            proc = subprocess.run([qmake, "-query", "QT_INSTALL_PREFIX"],
+                                  capture_output=True, text=True, timeout=10)
+            if proc.returncode == 0 and proc.stdout.strip():
+                candidates.append(proc.stdout.strip())
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return list(dict.fromkeys(p for p in candidates if p and _has_qt5_cmake(p)))
 
 
 def check_real_analysers() -> tuple[list[str], str | None]:
@@ -483,7 +509,7 @@ def check_real_analysers() -> tuple[list[str], str | None]:
         return [], "cmake not found"
     prefixes = find_qt_prefixes()
     if not prefixes:
-        return [], "no Qt 6 kit with CMake config files found"
+        return [], "no Qt 5 kit with CMake config files found"
 
     errors: list[str] = []
     with tempfile.TemporaryDirectory() as build:

@@ -440,9 +440,8 @@ RULES_FLAG: list[Rule] = [
 # Framework-only rules: only active when --framework flag is passed.
 # These enforce Qt module/library conventions (include style, qdoc,
 # internal shims) that don't apply to application code.
+# (INC-6 / qglobal.h split is Qt 6.5+ only and retired for Qt 5.)
 RULES_FRAMEWORK: list[Rule] = [
-    Rule("INC-6", RE_INC6_QGLOBAL,
-         "Do not include qglobal.h \u2014 use fine-grained headers instead"),
     Rule("INC-1", RE_INC1_BARE_QT,
          "Qt header included without module prefix \u2014 use <QtModule/qheader.h>",
          header_only=True),

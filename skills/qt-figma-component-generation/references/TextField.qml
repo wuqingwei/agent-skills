@@ -5,15 +5,14 @@
 // States: Default | Hover | Active (focus) | Disabled | Error
 //
 // Usage:
-//   import DesignSystem
+//   import DesignSystem 1.0
 //   TextField { label: "Email"; placeholder: "you@qt.io" }
 //   TextField { label: "API Key"; echoMode: TextInput.Password }
 //   TextField { label: "Name"; errorMessage: "This field is required" }
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
-import DesignSystem
-
+import DesignSystem 1.0
 ColumnLayout {
     id: root
 

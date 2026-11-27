@@ -93,7 +93,7 @@ These rules exist to keep the review cheap. Follow them.
    equal line count.
 5. **Use the dedicated review agent where the harness has one.** If the
    `cpp-review-agent` definition (listed as
-   `qt-development-skills:cpp-review-agent` when installed with the
+   `qt5-development-skills:cpp-review-agent` when installed with the
    plugin, plain `cpp-review-agent` when copied by hand) is available,
    launch the agents with it (read-only, tools limited to Read, Grep,
    Glob and read-only Bash); otherwise
@@ -124,7 +124,7 @@ Python 3.7+, no dependencies. If Python is unavailable, warn and
 continue (in diff scope, take the file list from
 `git diff --stat <range>`). The linter is authoritative; do not second-guess its
 output. Rule families: INC, DEP, PAT, MDL, ERR, LCY, API, ENM, TMO,
-CND, VAL, HDR, TRN, VAR (60+ checks). Exit code 1 simply means
+CND, VAL, HDR, TRN, VAR (55+ checks). Exit code 1 simply means
 findings exist; 2 means a usage or git error.
 
 In diff scope, line numbers refer to the end of the range. If a
