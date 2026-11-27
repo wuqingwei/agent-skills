@@ -1,0 +1,29 @@
+{
+  "name": "qt-skills-and-tools",
+  "owner": {
+    "name": "Qt Group",
+    "email": "info@qt.io"
+  },
+  "metadata": {
+    "description": "Agentic engineering skills for Qt 5 software development",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "qt5-development-skills",
+      "description": "This plug-in contains agentic engineering skills for Qt 5 software development, such as Qt C++/QML code review, QML coding, or Qt C++/QML code documentation skills. The skills have been tested with frontier LLMs from the Claude, Gemini, and GPT LLM families. These agentic development skills use AI and can make mistakes. Always double-check the output carefully.",
+      "source": "./",
+      "version": "1.0.0",
+      "repository": "https://github.com/wuqingwei/agent-skills",
+      "keywords": [
+        "qt",
+        "qt5",
+        "code-review",
+        "qml",
+        "qt-quick",
+        "development",
+        "documentation"
+      ]
+    }
+  ]
+}

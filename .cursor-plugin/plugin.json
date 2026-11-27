@@ -1,0 +1,25 @@
+{
+  "name": "qt5-development-skills",
+  "description": "Agentic engineering skills for Qt 5 software development, including Qt C++/QML code review, QML coding, and Qt C++/QML code documentation. These skills use AI and can make mistakes. Always double-check the output carefully.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Qt Group",
+    "email": "info@qt.io"
+  },
+  "homepage": "https://doc.qt.io/agentictools/",
+  "repository": "https://github.com/wuqingwei/agent-skills",
+  "license": "BSD-3-Clause",
+  "keywords": [
+    "qt",
+    "qt5",
+    "code-review",
+    "qml",
+    "qt-quick",
+    "development",
+    "documentation"
+  ],
+  "agents": [
+    "agents/cpp-review-agent.md",
+    "agents/qml-review-agent.md"
+  ]
+}
