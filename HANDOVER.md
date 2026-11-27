@@ -472,7 +472,7 @@ found and fixed.
 | Rule numbering | rules.md continuous 1–46 (awk scan, no gaps); SKILL.md/copilot in sync |
 | Internal reference integrity | every relative link in every SKILL.md points at an existing file (script scan) |
 | References to deleted files | zero remaining mentions of `qmlpreview.md`/`qt-canvas2d`/`docs/mcp`/`TreeViewDelegate` (outside the intentional removal notes in HANDOVER/README) |
-| Qt 6-only API re-scan of the figma assets | zero hits for `IconPosition`/`popupType`/`palette:`/`Overlay.overlay` etc.; `required property` and other 5.15 features confirmed inside the baseline |
+| Qt 6-only API re-scan of the figma assets | zero hits reported in that pass *(corrected in §14.7: a deeper scan later caught `popupType`, `font.variableAxes`, `SearchField`, `bottom*Radius`, `as`/`?.`, `??`, and `FontLoader.font.family`, all fixed in §14.7)* |
 | `ast.parse` on the lint scripts | syntax OK |
 
 ### 14.4 Docs-site verification (closed 2026-11-04)

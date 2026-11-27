@@ -139,8 +139,10 @@ to stdout. Map the message to a cause:
 - Every case fails with `"Type X unavailable"`,
   `"No such file or directory"` for `qrc:/...`, or
   `"<SiblingType> is not a type"` → URI imports against the
-  project module hit the module-on-executable case; refactor
-  per [qt-quick-test-cmake.md § Module-on-executable refactor](qt-quick-test-cmake.md#module-on-executable-refactor).
+  project's C++-registered types need the registering library
+  linked into the test binary (or an on-disk `qmldir` passed
+  via `-import`); see
+  [qt-quick-test-cmake.md § Additional detection](qt-quick-test-cmake.md#additional-detection--how-the-project-exposes-its-qml-types).
   Relative-import variant → verify paths and on-disk
   `qmldir`.
 

@@ -130,7 +130,6 @@ RE_COMMENT_LINE = re.compile(r"^\s*(//|/?\*)")
 RE_SCOPE_BOUNDARY = re.compile(r"^}")
 
 # INC
-RE_INC6_QGLOBAL = re.compile(r'^\s*#\s*include\s+[<"].*qglobal\.h[>"]')
 RE_INC1_BARE_QT = re.compile(r'^\s*#\s*include\s+<q[a-z].*\.h>')
 RE_INC1_PREFIXED = re.compile(r'^\s*#\s*include\s+<Qt[A-Z]')
 RE_INC3_QNN = re.compile(r'^\s*#\s*include\s+[<"]q(\d{2})([a-z][a-z_]*)')
